@@ -1,9 +1,12 @@
 # -*- coding:utf-8 -*-
 __author__ = 'Gree-gorey'
 
-import os, codecs, re
+import os, codecs
+from treetagger import TreeTagger
 
-conj = [line.rstrip('\n') for line in codecs.open('/home/gree-gorey/Py/CourseWork/lists/conj.txt', 'r', 'utf-8')]
+tt = TreeTagger(encoding=u'utf-8', language=u'russian')
+
+conj_list = [line.rstrip('\n') for line in codecs.open('/home/gree-gorey/Py/CourseWork/lists/conj.txt', 'r', 'utf-8')]
 ins = [line.rstrip('\n') for line in codecs.open('/home/gree-gorey/Py/CourseWork/lists/inserted.txt', 'r', 'utf-8')]
 
 class Text:
@@ -119,19 +122,42 @@ def remove_inserted(sent):
     sent.spans = newSpans
 
 
-def if_verb(token):
-    end = u'(ть|ти|чь)(ся|сь)?$'
-    abstr = u'ост.$'
-    if re.search(end, token, flags=re.U):
-        if not re.search(abstr, token, flags=re.U):
+def conj(token):
+    if token in conj_list:
+        return True
+
+def verb_in_span(span):
+    pos = tt.tag(span.content)
+    for token in pos:
+        if token[1][0] == u'V':
             return True
 
 
+def writeAnn(text, path):
+    i = 0
+    j = 0
+
+    writeName = path.replace(u'txt', u'ann')
+    w = codecs.open(writeName, 'w', 'utf-8')
+
+    for sent in text.sentences:
+        for r in sent.relations:
+            j += 1
+            line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i) + u'\t' + u'\n'
+            w.write(line)
+        for span in sent.spans:
+            i += 1
+            line = u'T' + str(i) + u'\t' + u'Span ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+            w.write(line)
+
+    w.close()
+
+
 def read_texts():
-    for root, dirs, files in os.walk(u'/opt/brat-v1.3_Crunchy_Frog/data/right/collection'):
+    for root, dirs, files in os.walk(u'/opt/brat-v1.3_Crunchy_Frog/data/right/new'):
         for filename in files:
             if u'txt' in filename:
-                open_name = u'/opt/brat-v1.3_Crunchy_Frog/data/right/collection/' + filename
+                open_name = u'/opt/brat-v1.3_Crunchy_Frog/data/right/new/' + filename
                 f = codecs.open(open_name, 'r', 'utf-8')
                 text = f.read()
                 f.close()

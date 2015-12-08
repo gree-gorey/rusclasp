@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*-
 __author__ = 'Gree-gorey'
 
-import codecs, time
+import time
 from structures import Text, read_texts, word_on, word_off, sentence_on, sentence_off, append_char, span_on, span_off
-from structures import splitter, remove_inserted, if_verb
+from structures import splitter, remove_inserted, conj, verb_in_span, writeAnn
 
 t1 = time.time()
 
@@ -11,11 +11,7 @@ low_letters = u'абвгдеёжзийклмнопрструфхцчшщъыьэ
 up_letters = low_letters.upper()
 numbers = u'0123456789'
 
-writeName = '/home/gree-gorey/Py/verbs.txt'
-w = codecs.open(writeName, 'w', 'utf-8')
-
-sent_count = 0
-token_count = 0
+# w = codecs.open(u'/home/gree-gorey/verbless.txt', 'w', 'utf-8')
 
 for item in read_texts():
     newText = Text()
@@ -37,8 +33,6 @@ for item in read_texts():
     word_off(newText, len(item[0])-1, item)
     sentence_off(newText, len(item[0])-1)
 
-    sent_count += len(newText.sentences)
-
     for sent in newText.sentences:
         span_on(newText, sent, sent.tokens[0])
         for token in sent.tokens:
@@ -51,31 +45,20 @@ for item in read_texts():
 
     for sent in newText.sentences:  # удаляем все вводные слова из разметки
         remove_inserted(sent)
+        # print len(sent.spans)
+        # for i in xrange(len(sent.spans)):
+        #     if not conj(sent.spans[i].tokens[0]):
+        #         print 1
+        #         if not verb_in_span(sent.spans[i]):
+        #             print 2
+        #             w.write(sent.spans[i].content + u'\n')
 
     for sent in newText.sentences:  # соединяем отношением разорванные предикации
         for i in xrange(len(sent.spans)):
             if splitter(sent.spans, i):
                 sent.relations.append((i, i+2))
 
-    i = 0
-    j = 0
-
-    writeName = item[1].replace(u'txt', u'ann')
-    w = codecs.open(writeName, 'w', 'utf-8')
-
-    for sent in newText.sentences:
-        for r in sent.relations:
-            j += 1
-            line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i) + u'\t' + u'\n'
-            w.write(line)
-        for span in sent.spans:
-            i += 1
-            line = u'T' + str(i) + u'\t' + u'Span ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-            w.write(line)
-
-    w.close()
-
-w.close()
+    writeAnn(newText, item[1])
 
 t2 = time.time()
 
