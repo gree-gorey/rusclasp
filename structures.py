@@ -126,6 +126,7 @@ def conj(token):
     if token in conj_list:
         return True
 
+
 def verb_in_span(span):
     pos = tt.tag(span.content)
     for token in pos:
@@ -133,7 +134,7 @@ def verb_in_span(span):
             return True
 
 
-def writeAnn(text, path):
+def write_clause_ann(text, path):
     i = 0
     j = 0
 
@@ -151,6 +152,10 @@ def writeAnn(text, path):
             w.write(line)
 
     w.close()
+
+
+def write_pos_ann(ann, path):
+    pass
 
 
 def read_texts():
