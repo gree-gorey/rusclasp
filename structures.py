@@ -1,13 +1,16 @@
 # -*- coding:utf-8 -*-
 __author__ = 'Gree-gorey'
 
-import os, codecs
-from treetagger import TreeTagger
+import os
+import codecs
+import json
+from pymystem3 import Mystem
 
-tt = TreeTagger(encoding=u'utf-8', language=u'russian')
+m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
-conj_list = [line.rstrip('\n') for line in codecs.open('/home/gree-gorey/Py/CourseWork/lists/conj.txt', 'r', 'utf-8')]
-ins = [line.rstrip('\n') for line in codecs.open('/home/gree-gorey/Py/CourseWork/lists/inserted.txt', 'r', 'utf-8')]
+# conj_list = [line.rstrip('\n') for line in codecs.open('/home/gree-gorey/Py/CourseWork/lists/conj.txt', 'r', 'utf-8')]
+# ins = [line.rstrip('\n') for line in codecs.open('/home/gree-gorey/Py/CourseWork/lists/inserted.txt', 'r', 'utf-8')]
+
 
 class Text:
     def __init__(self):
@@ -19,6 +22,7 @@ class Text:
 
 class Sentence:
     def __init__(self):
+        self.content = u''
         self.begin = 0
         self.end = 0
         self.tokens = []
@@ -155,19 +159,27 @@ def write_clause_ann(text, path):
 
 
 def write_pos_ann(ann, path):
-    pass
+    name = path[:-3:] + u'json'
+    w = codecs.open(name, u'w', u'utf-8')
+    json.dump(ann, w, ensure_ascii=False, indent=2)
+    w.close()
+
+
+def pos_analyzer(text):
+    return m.analyze(text)
 
 
 def read_texts():
-    for root, dirs, files in os.walk(u'/opt/brat-v1.3_Crunchy_Frog/data/right/new'):
+    for root, dirs, files in os.walk(u'/home/gree-gorey/Corpus'):
         for filename in files:
             if u'txt' in filename:
-                open_name = u'/opt/brat-v1.3_Crunchy_Frog/data/right/new/' + filename
+                open_name = u'/home/gree-gorey/Corpus/' + filename
                 f = codecs.open(open_name, 'r', 'utf-8')
                 text = f.read()
                 f.close()
                 yield text, open_name
 
 # /home/gree-gorey/Py/CourseWork/corpus/
+# /home/gree-gorey/Corpus/
 # /opt/brat-v1.3_Crunchy_Frog/data/right/collection/'
 # /opt/brat-v1.3_Crunchy_Frog/data/right/all/
