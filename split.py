@@ -2,20 +2,20 @@
 __author__ = 'Gree-gorey'
 
 import time
-from structures import Text, read_texts, add_token, sentence_on, end_of_sentence, sentence_off, write_brat_sent
+from structures import Text, read_texts, write_brat_sent
 
 t1 = time.time()
 
 for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
     newText = Text()
+
     for i in xrange(len(item[0])):
-        sentence_on(newText)
-        add_token(newText, item[0][i])
-        pre_token = {} if i == 0 else item[0][i-1]
-        post_token = {} if i == len(item[0])-1 else item[0][i+1]
-        if end_of_sentence(pre_token, item[0][i], post_token):
-            sentence_off(newText)
-    sentence_off(newText)
+        newText.sentence_on()
+        newText.add_token(item[0][i]) if i == len(item[0])-1 else newText.add_token(item[0][i], item[0][i])
+        if newText.end_of_sentence():
+            newText.sentence_off()
+
+    newText.sentence_off()
     write_brat_sent(newText, item[1])
 
     # for sent in newText.sentences:

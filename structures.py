@@ -19,12 +19,76 @@ class Text:
         self.word = False
         self.span = False
 
+    def sentence_on(self):
+        if self.sentence is False:
+            self.sentence = True
+            self.sentences.append(Sentence())
+
+    def sentence_off(self):
+        if self.sentence is True:
+            self.sentence = False
+
+    def end_of_sentence(self):
+        if self.sentences[-1].tokens[-1].pos == u'PERIOD':  # if it is a period
+            if self.sentences[-1].tokens[-1].post_token[0]:  # if the next token is uppercase
+                print 2
+                if u'сокр' in self.sentences[-1].tokens[-2]:  # if the previous one is abbreviation
+                    if self.sentences[-1].tokens[-1].post_token[1]:  # if the next one in a name
+                        if self.sentences[-1].tokens[-1].after_name:  # if one of the previous five tokens is a name
+                            return True
+                        else:
+                            return False
+                    else:
+                        return True
+                else:
+                    return True
+            else:
+                return False
+        return False
+
+    def add_token(self, token, post_token=None):
+        self.sentences[-1].tokens.append(Token())
+        self.sentences[-1].tokens[-1].begin = token[u'begin']
+        self.sentences[-1].tokens[-1].end = token[u'end']
+        self.sentences[-1].tokens[-1].content = token[u'text']
+        if u'analysis' in token:
+            if token[u'analysis'] != []:
+                self.sentences[-1].tokens[-1].pos = token[u'analysis'][0][u'gr']
+            else:
+                self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
+        else:
+            if token[u'text'] == u' ':
+                self.sentences[-1].tokens[-1].pos = u'SPACE'
+            else:
+                if u',' in token[u'text']:
+                    self.sentences[-1].tokens[-1].pos = u'COMMA'
+                elif u'.' in token[u'text']:
+                    self.sentences[-1].tokens[-1].pos = u'PERIOD'
+                else:
+                    self.sentences[-1].tokens[-1].pos = u'PUNCT'
+        if self.sentences[-1].after_name[0]:
+            if self.sentences[-1].after_name[1] <= 6:
+                self.sentences[-1].tokens[-1].after_name = True
+            else:
+                self.sentences[-1].after_name = (False, 0)
+        if u'фам' in self.sentences[-1].tokens[-1].pos:
+            self.sentences[-1].after_name[0] = True
+            self.sentences[-1].after_name[1] += 1
+        if post_token is not None:
+            if post_token[u'text'].istitle():
+                self.sentences[-1].tokens[-1].post_token[0] = True
+                if u'analysis' in post_token:
+                    if post_token[u'analysis'] is not []:
+                        if u'фам' in post_token[u'analysis'][0][u'gr']:
+                            self.sentences[-1].tokens[-1].post_token[1] = True
+
 
 class Sentence:
     def __init__(self):
         self.tokens = []
         self.spans = []
         self.relations = []
+        self.after_name = [False, 0]
 
 
 class Token:
@@ -33,30 +97,13 @@ class Token:
         self.pos = u''
         self.begin = 0
         self.end = 0
+        self.after_name = False
+        self.post_token = [False, False]  # ab the next token: if uppercase, if a name
 
 
 class Span:
     def __init__(self):
         self.tokens = []
-
-
-def add_token(text, token):
-    text.sentences[-1].tokens.append(Token())
-    text.sentences[-1].tokens[-1].begin = token[u'begin']
-    text.sentences[-1].tokens[-1].end = token[u'end']
-    text.sentences[-1].tokens[-1].content = token[u'text']
-    if u'analysis' in token:
-        text.sentences[-1].tokens[-1].pos = u'temp' # token[u'analysis'][0][u'gr']
-    else:
-        if token[u'text'] == u' ':
-            text.sentences[-1].tokens[-1].pos = u'SPACE'
-        else:
-            if u',' in token[u'text']:
-                text.sentences[-1].tokens[-1].pos = u'COMMA'
-            elif u'.' in token[u'text']:
-                text.sentences[-1].tokens[-1].pos = u'PERIOD'
-            else:
-                text.sentences[-1].tokens[-1].pos = u'PUNCT'
 
 
 def span_on(text, sent, token):
@@ -73,27 +120,7 @@ def span_off(text, sent, token):
         sent.spans[-1].content = u' '.join(sent.spans[-1].tokens)
 
 
-def sentence_on(text):
-    if text.sentence is False:
-        text.sentence = True
-        text.sentences.append(Sentence())
 
-
-def sentence_off(text):
-    if text.sentence is True:
-        text.sentence = False
-
-
-def end_of_sentence(pre_token, token, post_token):
-    if u'analysis' not in token and u'text' in token:
-        if u'.' in token[u'text']:
-            if u'analysis' in pre_token and u'analysis' in post_token:
-                if u'сокр' in pre_token[u'analysis'][0][u'gr']:
-                    return False
-                else:
-                    return True
-    else:
-        return False
 
 
 
