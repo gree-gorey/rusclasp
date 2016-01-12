@@ -22,9 +22,6 @@ class Text:
 
 class Sentence:
     def __init__(self):
-        self.content = u''
-        self.begin = 0
-        self.end = 0
         self.tokens = []
         self.spans = []
         self.relations = []
@@ -33,39 +30,33 @@ class Sentence:
 class Token:
     def __init__(self):
         self.content = u''
+        self.pos = u''
         self.begin = 0
         self.end = 0
 
 
 class Span:
     def __init__(self):
-        self.content = u''
-        self.begin = 0
-        self.end = 0
         self.tokens = []
 
 
-def append_char(text, char, i):
-    if len(text.sentences) != 0:
-        text.sentences[-1].tokens.append(Token())
-        text.sentences[-1].tokens[-1].begin = i
-        text.sentences[-1].tokens[-1].end = i
-        text.sentences[-1].tokens[-1].content = char
-
-
-def word_on(text, i):
-    if text.word is False:
-        text.word = True
-        text.sentences[-1].tokens.append(Token())
-        text.sentences[-1].tokens[-1].begin = i
-
-
-def word_off(text, i, item):
-    if text.word is True:
-        text.word = False
-        text.sentences[-1].tokens[-1].end = i-1
-        text.sentences[-1].tokens[-1].content = item[0][text.sentences[-1].tokens[-1].begin:
-                                                   text.sentences[-1].tokens[-1].end+1:]
+def add_token(text, token):
+    text.sentences[-1].tokens.append(Token())
+    text.sentences[-1].tokens[-1].begin = token[u'begin']
+    text.sentences[-1].tokens[-1].end = token[u'end']
+    text.sentences[-1].tokens[-1].content = token[u'text']
+    if u'analysis' in token:
+        text.sentences[-1].tokens[-1].pos = u'temp' # token[u'analysis'][0][u'gr']
+    else:
+        if token[u'text'] == u' ':
+            text.sentences[-1].tokens[-1].pos = u'SPACE'
+        else:
+            if u',' in token[u'text']:
+                text.sentences[-1].tokens[-1].pos = u'COMMA'
+            elif u'.' in token[u'text']:
+                text.sentences[-1].tokens[-1].pos = u'PERIOD'
+            else:
+                text.sentences[-1].tokens[-1].pos = u'PUNCT'
 
 
 def span_on(text, sent, token):
@@ -82,17 +73,28 @@ def span_off(text, sent, token):
         sent.spans[-1].content = u' '.join(sent.spans[-1].tokens)
 
 
-def sentence_on(text, i):
+def sentence_on(text):
     if text.sentence is False:
         text.sentence = True
         text.sentences.append(Sentence())
-        text.sentences[-1].begin = i
 
 
-def sentence_off(text, i):
+def sentence_off(text):
     if text.sentence is True:
         text.sentence = False
-        text.sentences[-1].end = i
+
+
+def end_of_sentence(pre_token, token, post_token):
+    if u'analysis' not in token and u'text' in token:
+        if u'.' in token[u'text']:
+            if u'analysis' in pre_token and u'analysis' in post_token:
+                if u'сокр' in pre_token[u'analysis'][0][u'gr']:
+                    return False
+                else:
+                    return True
+    else:
+        return False
+
 
 
 def splitter(spans, i):
@@ -175,6 +177,16 @@ def write_brat_ann(ann, path):
     w.close()
 
 
+def write_brat_sent(text, path):
+    name = path[:-4:] + u'ann'
+    w = codecs.open(name, u'w', u'utf-8')
+    i = 1
+    for sentence in text.sentences:
+        w.write(u'T' + str(i) + u'\tSpan ' + str(sentence.tokens[0].begin) + u' ' + str(sentence.tokens[-2].end) + u'\t' + u'\n')
+        i += 1
+    w.close()
+
+
 def pos_analyzer(text):
     analysis = m.analyze(text)
     position = 0
@@ -187,15 +199,18 @@ def pos_analyzer(text):
     return analysis
 
 
-def read_texts():
-    for root, dirs, files in os.walk(u'/home/gree-gorey/Corpus'):
+def read_texts(extension, path):
+    for root, dirs, files in os.walk(path):
         for filename in files:
-            if u'txt' in filename:
-                open_name = u'/home/gree-gorey/Corpus/' + filename
-                f = codecs.open(open_name, 'r', 'utf-8')
-                text = f.read()
+            if extension in filename:
+                open_name = path + filename
+                f = codecs.open(open_name, u'r', u'utf-8')
+                if extension == u'json':
+                    result = json.load(f)
+                else:
+                    result = f.read()
                 f.close()
-                yield text, open_name
+                yield result, open_name
 
 # /home/gree-gorey/Py/CourseWork/corpus/
 # /home/gree-gorey/Corpus/
