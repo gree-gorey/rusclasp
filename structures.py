@@ -165,8 +165,26 @@ def write_pos_ann(ann, path):
     w.close()
 
 
+def write_brat_ann(ann, path):
+    name = path[:-3:] + u'ann'
+    w = codecs.open(name, u'w', u'utf-8')
+    i = 1
+    for token in ann:
+        w.write(u'T' + str(i) + u'\tSpan ' + str(token[u'begin']) + u' ' + str(token[u'end']) + u'\t' + token[u'text'] + u'\n')
+        i += 1
+    w.close()
+
+
 def pos_analyzer(text):
-    return m.analyze(text)
+    analysis = m.analyze(text)
+    position = 0
+    if analysis[-1][u'text'] == u'\n':
+        del analysis[-1]
+    for token in analysis:
+        token[u'begin'] = position
+        position += len(token[u'text'])
+        token[u'end'] = position
+    return analysis
 
 
 def read_texts():
