@@ -11,11 +11,12 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
 
     for i in xrange(len(item[0])):
         newText.sentence_on()
-        newText.add_token(item[0][i]) if i == len(item[0])-1 else newText.add_token(item[0][i], item[0][i])
+        newText.add_token(item[0][i]) if i == len(item[0])-1 else newText.add_token(item[0][i], item[0][i+1])
         if newText.end_of_sentence():
             newText.sentence_off()
 
     newText.sentence_off()
+
     write_brat_sent(newText, item[1])
 
     # for sent in newText.sentences:

@@ -30,10 +30,9 @@ class Text:
 
     def end_of_sentence(self):
         if self.sentences[-1].tokens[-1].pos == u'PERIOD':  # if it is a period
-            if self.sentences[-1].tokens[-1].post_token[0]:  # if the next token is uppercase
-                print 2
-                if u'сокр' in self.sentences[-1].tokens[-2]:  # if the previous one is abbreviation
-                    if self.sentences[-1].tokens[-1].post_token[1]:  # if the next one in a name
+            if self.sentences[-1].tokens[-1].next_token_title:  # if the next token is uppercase
+                if self.sentences[-1].tokens[-1].after_abbreviation:  # if the previous one is abbreviation
+                    if self.sentences[-1].tokens[-1].next_token_name:  # if the next one in a name
                         if self.sentences[-1].tokens[-1].after_name:  # if one of the previous five tokens is a name
                             return True
                         else:
@@ -46,7 +45,7 @@ class Text:
                 return False
         return False
 
-    def add_token(self, token, post_token=None):
+    def add_token(self, token, next_token=None):
         self.sentences[-1].tokens.append(Token())
         self.sentences[-1].tokens[-1].begin = token[u'begin']
         self.sentences[-1].tokens[-1].end = token[u'end']
@@ -64,23 +63,31 @@ class Text:
                     self.sentences[-1].tokens[-1].pos = u'COMMA'
                 elif u'.' in token[u'text']:
                     self.sentences[-1].tokens[-1].pos = u'PERIOD'
+                    if self.sentences[-1].after_abbreviation:
+                        self.sentences[-1].tokens[-1].after_abbreviation = True
+                    if next_token is not None:
+                        if next_token[u'text'].istitle():
+                            self.sentences[-1].tokens[-1].next_token_title = True
+                            if u'analysis' in next_token:
+                                if next_token[u'analysis'] is not []:
+                                    if u'фам' in next_token[u'analysis'][0][u'gr']:
+                                        self.sentences[-1].tokens[-1].next_token_name = True
+                                    if u'сокр' in next_token[u'analysis'][0][u'gr']:
+                                        self.sentences[-1].tokens[-1].next_token_title = False
                 else:
                     self.sentences[-1].tokens[-1].pos = u'PUNCT'
         if self.sentences[-1].after_name[0]:
-            if self.sentences[-1].after_name[1] <= 6:
+            if self.sentences[-1].after_name[1] <= 5:
                 self.sentences[-1].tokens[-1].after_name = True
             else:
-                self.sentences[-1].after_name = (False, 0)
+                self.sentences[-1].after_name = [False, 0]
+            self.sentences[-1].after_name[1] += 1
         if u'фам' in self.sentences[-1].tokens[-1].pos:
             self.sentences[-1].after_name[0] = True
-            self.sentences[-1].after_name[1] += 1
-        if post_token is not None:
-            if post_token[u'text'].istitle():
-                self.sentences[-1].tokens[-1].post_token[0] = True
-                if u'analysis' in post_token:
-                    if post_token[u'analysis'] is not []:
-                        if u'фам' in post_token[u'analysis'][0][u'gr']:
-                            self.sentences[-1].tokens[-1].post_token[1] = True
+        if u'сокр' in self.sentences[-1].tokens[-1].pos:
+            self.sentences[-1].after_abbreviation = True
+        else:
+            self.sentences[-1].after_abbreviation = False
 
 
 class Sentence:
@@ -89,6 +96,7 @@ class Sentence:
         self.spans = []
         self.relations = []
         self.after_name = [False, 0]
+        self.after_abbreviation = False
 
 
 class Token:
@@ -98,7 +106,9 @@ class Token:
         self.begin = 0
         self.end = 0
         self.after_name = False
-        self.post_token = [False, False]  # ab the next token: if uppercase, if a name
+        self.after_abbreviation = False
+        self.next_token_title = False
+        self.next_token_name = False
 
 
 class Span:
