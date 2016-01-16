@@ -135,11 +135,19 @@ class Span:
         self.begin = 0
         self.end = 0
         self.alpha = False
+        self.finite = False
 
     def type(self):
         for token in self.tokens:
             if u'прич' in token.pos:
                 self.alpha = True
+
+    def accept(self):
+        for token in self.tokens:
+            if u'V' in token.pos or u'им' in token.pos:
+                self.finite = True
+                break
+        return self.finite
 
 
 def splitter(spans, i):

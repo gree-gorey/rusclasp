@@ -33,8 +33,8 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
             if sent.spans[j].alpha:
                 for k in xrange(j+1, len(sent.spans)):
                     if not sent.spans[k].alpha:
-                        pass
-
+                        if sent.spans[k].accept():
+                            sent.spans[k].alpha = True
 
     # write_brat_sent(newText, item[1])
 
