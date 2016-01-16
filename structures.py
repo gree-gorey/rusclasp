@@ -129,6 +129,14 @@ class Token:
 class Span:
     def __init__(self):
         self.tokens = []
+        self.alpha = False
+
+    def type(self):
+        for token in self.tokens:
+            if u'analysis' in token:
+                if token[u'analysis']:
+                    if u'прич' in token[u'analysis'][0][u'gr']:
+                        self.alpha = True
 
 
 def splitter(spans, i):

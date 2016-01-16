@@ -20,11 +20,13 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
         for token in sent.tokens:
             sent.span_on(token)
             if token.end_of_span():
-                print 1
                 sent.span_off(token)
             else:
                 sent.span_on(token)
         sent.span_off(sent.tokens[-1])
+
+        for span in sent.spans:
+            span.type()
 
     # write_brat_sent(newText, item[1])
 
