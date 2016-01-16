@@ -1,33 +1,34 @@
 # -*- coding:utf-8 -*-
-__author__ = 'Gree-gorey'
 
 import time
-from structures import Text, read_texts, write_brat_sent
+from structures import Text, read_texts, write_brat_sent, write_clause_ann
+
+__author__ = 'Gree-gorey'
 
 t1 = time.time()
 
 for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
     newText = Text()
-
     for i in xrange(len(item[0])):
         newText.sentence_on()
         newText.add_token(item[0][i]) if i == len(item[0])-1 else newText.add_token(item[0][i], item[0][i+1])
         if newText.end_of_sentence():
             newText.sentence_off()
-
     newText.sentence_off()
 
-    write_brat_sent(newText, item[1])
+    for sent in newText.sentences:
+        for token in sent.tokens:
+            sent.span_on(token)
+            if token.end_of_span():
+                print 1
+                sent.span_off(token)
+            else:
+                sent.span_on(token)
+        sent.span_off(sent.tokens[-1])
 
-    # for sent in newText.sentences:
-    #     span_on(newText, sent, sent.tokens[0])
-    #     for token in sent.tokens:
-    #         if token.content == u',':
-    #             span_off(newText, sent, token)
-    #         else:
-    #             span_on(newText, sent, token)
-    #             sent.spans[-1].tokens.append(token.content)
-    #     span_off(newText, sent, sent.tokens[-1])
+    # write_brat_sent(newText, item[1])
+
+    write_clause_ann(newText, item[1])
 
     # for sent in newText.sentences:  # удаляем все вводные слова из разметки
     #     remove_inserted(sent)

@@ -1,8 +1,9 @@
 # -*- coding:utf-8 -*-
-__author__ = 'Gree-gorey'
 
 import time
 from structures import read_texts, write_pos_ann, pos_analyzer, write_brat_ann
+
+__author__ = 'Gree-gorey'
 
 t1 = time.time()
 

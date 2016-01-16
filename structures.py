@@ -1,10 +1,11 @@
 # -*- coding:utf-8 -*-
-__author__ = 'Gree-gorey'
 
 import os
 import codecs
 import json
 from pymystem3 import Mystem
+
+__author__ = 'Gree-gorey'
 
 m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
@@ -16,16 +17,14 @@ class Text:
     def __init__(self):
         self.sentences = []
         self.sentence = False
-        self.word = False
-        self.span = False
 
     def sentence_on(self):
-        if self.sentence is False:
+        if not self.sentence:
             self.sentence = True
             self.sentences.append(Sentence())
 
     def sentence_off(self):
-        if self.sentence is True:
+        if self.sentence:
             self.sentence = False
 
     def end_of_sentence(self):
@@ -51,7 +50,7 @@ class Text:
         self.sentences[-1].tokens[-1].end = token[u'end']
         self.sentences[-1].tokens[-1].content = token[u'text']
         if u'analysis' in token:
-            if token[u'analysis'] != []:
+            if token[u'analysis']:
                 self.sentences[-1].tokens[-1].pos = token[u'analysis'][0][u'gr']
             else:
                 self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
@@ -97,6 +96,19 @@ class Sentence:
         self.relations = []
         self.after_name = [False, 0]
         self.after_abbreviation = False
+        self.span = False
+
+    def span_on(self, token):
+        if not self.span:
+            self.span = True
+            self.spans.append(Span())
+            self.spans[-1].begin = token.begin
+
+    def span_off(self, token):
+        if self.span:
+            self.span = False
+            self.spans[-1].end = token.end
+            # self.spans[-1].content = u''.join(self.spans[-1].tokens)
 
 
 class Token:
@@ -110,28 +122,13 @@ class Token:
         self.next_token_title = False
         self.next_token_name = False
 
+    def end_of_span(self):
+        return self.pos == u'COMMA'
+
 
 class Span:
     def __init__(self):
         self.tokens = []
-
-
-def span_on(text, sent, token):
-    if text.span is False:
-        text.span = True
-        sent.spans.append(Span())
-        sent.spans[-1].begin = token.begin
-
-
-def span_off(text, sent, token):
-    if text.span is True:
-        text.span = False
-        sent.spans[-1].end = token.end
-        sent.spans[-1].content = u' '.join(sent.spans[-1].tokens)
-
-
-
-
 
 
 def splitter(spans, i):
@@ -170,19 +167,12 @@ def conj(token):
         return True
 
 
-def verb_in_span(span):
-    pos = tt.tag(span.content)
-    for token in pos:
-        if token[1][0] == u'V':
-            return True
-
-
 def write_clause_ann(text, path):
     i = 0
     j = 0
 
-    writeName = path.replace(u'txt', u'ann')
-    w = codecs.open(writeName, 'w', 'utf-8')
+    write_name = path.replace(u'json', u'ann')
+    w = codecs.open(write_name, 'w', 'utf-8')
 
     for sent in text.sentences:
         for r in sent.relations:
