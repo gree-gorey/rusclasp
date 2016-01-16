@@ -29,6 +29,13 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
         for span in sent.spans:
             span.type()
 
+        for j in xrange(len(sent.spans)-1, -1, -1):
+            if sent.spans[j].alpha:
+                for k in xrange(j+1, len(sent.spans)):
+                    if not sent.spans[k].alpha:
+                        pass
+
+
     # write_brat_sent(newText, item[1])
 
     write_clause_ann(newText, item[1])
