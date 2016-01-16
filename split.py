@@ -19,6 +19,7 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
     for sent in newText.sentences:
         for token in sent.tokens:
             sent.span_on(token)
+            sent.add_token(token)
             if token.end_of_span():
                 sent.span_off(token)
             else:

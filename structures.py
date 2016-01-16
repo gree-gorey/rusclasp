@@ -9,7 +9,6 @@ __author__ = 'Gree-gorey'
 
 m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
-# conj_list = [line.rstrip('\n') for line in codecs.open('/home/gree-gorey/Py/CourseWork/lists/conj.txt', 'r', 'utf-8')]
 # ins = [line.rstrip('\n') for line in codecs.open('/home/gree-gorey/Py/CourseWork/lists/inserted.txt', 'r', 'utf-8')]
 
 
@@ -98,6 +97,9 @@ class Sentence:
         self.after_abbreviation = False
         self.span = False
 
+    def add_token(self, token):
+        self.spans[-1].tokens.append(token)
+
     def span_on(self, token):
         if not self.span:
             self.span = True
@@ -107,7 +109,8 @@ class Sentence:
     def span_off(self, token):
         if self.span:
             self.span = False
-            self.spans[-1].end = token.end
+            self.spans[-1].tokens.pop()
+            self.spans[-1].end = self.spans[-1].tokens[-1].end
             # self.spans[-1].content = u''.join(self.spans[-1].tokens)
 
 
@@ -129,14 +132,14 @@ class Token:
 class Span:
     def __init__(self):
         self.tokens = []
+        self.begin = 0
+        self.end = 0
         self.alpha = False
 
     def type(self):
         for token in self.tokens:
-            if u'analysis' in token:
-                if token[u'analysis']:
-                    if u'прич' in token[u'analysis'][0][u'gr']:
-                        self.alpha = True
+            if u'прич' in token.pos:
+                self.alpha = True
 
 
 def splitter(spans, i):
@@ -151,28 +154,23 @@ def inserted(span):
 
 
 def remove_inserted(sent):
-    newSpans = []
+    new_spans = []
     ins = False
     for i in xrange(len(sent.spans)):
         if inserted(sent.spans[i]):
             if i != 0 and i != len(sent.spans):
-                newSpan = Span()
-                newSpan.begin = sent.spans[i-1].begin
-                newSpan.end = sent.spans[i+1].end
-                newSpan.tokens = sent.spans[i-1].tokens + sent.spans[i+1].tokens
-                newSpans.pop()
-                newSpans.append(newSpan)
+                new_span = Span()
+                new_span.begin = sent.spans[i-1].begin
+                new_span.end = sent.spans[i+1].end
+                new_span.tokens = sent.spans[i-1].tokens + sent.spans[i+1].tokens
+                new_spans.pop()
+                new_spans.append(new_span)
                 ins = True
         else:
             if not ins:
-                newSpans.append(sent.spans[i])
+                new_spans.append(sent.spans[i])
             ins = False
-    sent.spans = newSpans
-
-
-def conj(token):
-    if token in conj_list:
-        return True
+    sent.spans = new_spans
 
 
 def write_clause_ann(text, path):
