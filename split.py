@@ -32,9 +32,30 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
         for j in xrange(len(sent.spans)-1, -1, -1):
             if sent.spans[j].alpha:
                 for k in xrange(j+1, len(sent.spans)):
-                    if not sent.spans[k].alpha:
-                        if sent.spans[k].accept():
-                            sent.spans[k].alpha = True
+                    if not sent.spans[k].alpha and not sent.spans[k].in_alpha:
+                        if sent.spans[k].accept_alpha():
+                            if k != j+1:
+                                sent.spans[k].alpha = True
+                                sent.relations = (j, k)
+                            else:
+                                sent.spans[j].tokens += sent.spans[k].tokens
+                                sent.spans[k].in_alpha = True
+
+        for j in xrange(len(sent.spans)):
+            print sent.spans[j].alpha, sent.spans[j].in_alpha, sent.spans[j].in_beta
+            if not sent.spans[j].alpha and not sent.spans[j].in_alpha and not sent.spans[j].in_beta:
+                print 1
+                sent.spans[j].beta = True
+                for k in xrange(j+1, len(sent.spans)):
+                    if sent.spans[k].accept_beta():
+                        if k != j+1:
+                            print 1
+                            sent.spans[k].beta = True
+                            sent.relations = (j, k)
+                        else:
+                            print 2
+                            sent.spans[j].tokens += sent.spans[k].tokens
+                            sent.spans[k].in_beta = True
 
     # write_brat_sent(newText, item[1])
 
@@ -49,11 +70,6 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
     #             if not verb_in_span(sent.spans[i]):
     #                 print 2
     #                 w.write(sent.spans[i].content + u'\n')
-
-    # for sent in newText.sentences:  # соединяем отношением разорванные предикации
-    #     for i in xrange(len(sent.spans)):
-    #         if splitter(sent.spans, i):
-    #             sent.relations.append((i, i+2))
 
 
 t2 = time.time()

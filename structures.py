@@ -136,18 +136,28 @@ class Span:
         self.end = 0
         self.alpha = False
         self.finite = False
+        self.in_alpha = False
+        self.beta = False
+        self.in_beta = False
 
     def type(self):
         for token in self.tokens:
             if u'прич' in token.pos:
                 self.alpha = True
 
-    def accept(self):
+    def accept_alpha(self):
         for token in self.tokens:
             if u'V' in token.pos or u'им' in token.pos:
                 self.finite = True
                 break
         return self.finite
+
+    def accept_beta(self):
+        for token in self.tokens:
+            if u'V' in token.pos:
+                self.finite = True
+                break
+        return not self.finite
 
 
 def splitter(spans, i):
@@ -194,9 +204,10 @@ def write_clause_ann(text, path):
             line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i) + u'\t' + u'\n'
             w.write(line)
         for span in sent.spans:
-            i += 1
-            line = u'T' + str(i) + u'\t' + u'Span ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-            w.write(line)
+            if span.alpha or span.beta:
+                i += 1
+                line = u'T' + str(i) + u'\t' + u'Span ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                w.write(line)
 
     w.close()
 
