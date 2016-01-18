@@ -42,20 +42,21 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
                                 sent.spans[k].in_alpha = True
 
         for j in xrange(len(sent.spans)):
-            print sent.spans[j].alpha, sent.spans[j].in_alpha, sent.spans[j].in_beta
             if not sent.spans[j].alpha and not sent.spans[j].in_alpha and not sent.spans[j].in_beta:
-                print 1
                 sent.spans[j].beta = True
                 for k in xrange(j+1, len(sent.spans)):
                     if sent.spans[k].accept_beta():
                         if k != j+1:
-                            print 1
                             sent.spans[k].beta = True
                             sent.relations = (j, k)
                         else:
-                            print 2
                             sent.spans[j].tokens += sent.spans[k].tokens
                             sent.spans[k].in_beta = True
+
+        for span in sent.spans:
+            if span.alpha or span.beta:
+                span.begin = span.tokens[0].begin
+                span.end = span.tokens[-1].end
 
     # write_brat_sent(newText, item[1])
 

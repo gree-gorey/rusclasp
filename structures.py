@@ -142,7 +142,7 @@ class Span:
 
     def type(self):
         for token in self.tokens:
-            if u'прич' in token.pos:
+            if u'прич' in token.pos and u'полн' in token.pos:
                 self.alpha = True
 
     def accept_alpha(self):
@@ -158,12 +158,6 @@ class Span:
                 self.finite = True
                 break
         return not self.finite
-
-
-def splitter(spans, i):
-    if i < xrange(len(spans)):
-        if spans[i].tokens[0].lower()[:5:] == u'котор' and spans[i+1].tokens[0].lower() not in conj:
-            return True
 
 
 def inserted(span):
