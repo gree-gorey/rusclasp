@@ -36,7 +36,7 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
                         if sent.spans[k].accept_alpha():
                             if k != j+1:
                                 sent.spans[k].alpha = True
-                                sent.relations = (j, k)
+                                sent.relations.append((j, k))
                             else:
                                 sent.spans[j].tokens += sent.spans[k].tokens
                                 sent.spans[k].in_alpha = True
@@ -48,7 +48,7 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
                     if sent.spans[k].accept_beta():
                         if k != j+1:
                             sent.spans[k].beta = True
-                            sent.relations = (j, k)
+                            sent.relations.append((j, k))
                         else:
                             sent.spans[j].tokens += sent.spans[k].tokens
                             sent.spans[k].in_beta = True

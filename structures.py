@@ -5,11 +5,12 @@ import codecs
 import json
 from pymystem3 import Mystem
 
-__author__ = 'Gree-gorey'
+__author__ = u'Gree-gorey'
 
 m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
-# ins = [line.rstrip('\n') for line in codecs.open('/home/gree-gorey/Py/CourseWork/lists/inserted.txt', 'r', 'utf-8')]
+# ins = [line.rstrip(u'\n') for line in codecs.open(u'/home/gree-gorey/Py/CourseWork/lists/inserted.txt', u'r',
+#                                                   u'utf-8')]
 
 
 class Text:
@@ -64,7 +65,7 @@ class Text:
                     if self.sentences[-1].after_abbreviation:
                         self.sentences[-1].tokens[-1].after_abbreviation = True
                     if next_token is not None:
-                        if next_token[u'text'].istitle():
+                        if next_token[u'text'].istitle() or next_token[u'text'] == u'\"':
                             self.sentences[-1].tokens[-1].next_token_title = True
                             if u'analysis' in next_token:
                                 if next_token[u'analysis'] is not []:
@@ -190,7 +191,7 @@ def write_clause_ann(text, path):
     j = 0
 
     write_name = path.replace(u'json', u'ann')
-    w = codecs.open(write_name, 'w', 'utf-8')
+    w = codecs.open(write_name, u'w', u'utf-8')
 
     for sent in text.sentences:
         for r in sent.relations:
@@ -218,7 +219,8 @@ def write_brat_ann(ann, path):
     w = codecs.open(name, u'w', u'utf-8')
     i = 1
     for token in ann:
-        w.write(u'T' + str(i) + u'\tSpan ' + str(token[u'begin']) + u' ' + str(token[u'end']) + u'\t' + token[u'text'] + u'\n')
+        w.write(u'T' + str(i) + u'\tSpan ' + str(token[u'begin']) + u' ' + str(token[u'end']) + u'\t' + token[u'text'] +
+                u'\n')
         i += 1
     w.close()
 
@@ -228,7 +230,8 @@ def write_brat_sent(text, path):
     w = codecs.open(name, u'w', u'utf-8')
     i = 1
     for sentence in text.sentences:
-        w.write(u'T' + str(i) + u'\tSpan ' + str(sentence.tokens[0].begin) + u' ' + str(sentence.tokens[-2].end) + u'\t' + u'\n')
+        w.write(u'T' + str(i) + u'\tSpan ' + str(sentence.tokens[0].begin) + u' ' + str(sentence.tokens[-2].end) +
+                u'\t' + u'\n')
         i += 1
     w.close()
 
@@ -258,7 +261,5 @@ def read_texts(extension, path):
                 f.close()
                 yield result, open_name
 
-# /home/gree-gorey/Py/CourseWork/corpus/
 # /home/gree-gorey/Corpus/
 # /opt/brat-v1.3_Crunchy_Frog/data/right/collection/'
-# /opt/brat-v1.3_Crunchy_Frog/data/right/all/
