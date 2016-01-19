@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import time
-from structures import Text, read_texts, write_brat_sent, write_clause_ann
+from structures import Text, read_texts, write_brat_sent, write_clause_ann, Chunk
 
 __author__ = 'Gree-gorey'
 
@@ -9,54 +9,34 @@ t1 = time.time()
 
 for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
     newText = Text()
-    for i in xrange(len(item[0])):
-        newText.sentence_on()
-        newText.add_token(item[0][i]) if i == len(item[0])-1 else newText.add_token(item[0][i], item[0][i+1])
-        if newText.end_of_sentence():
-            newText.sentence_off()
-    newText.sentence_off()
+    newText.sentence_splitter(item)
 
     for sent in newText.sentences:
-        for token in sent.tokens:
-            sent.span_on(token)
-            sent.add_token(token)
-            if token.end_of_span():
-                sent.span_off(token)
-            else:
-                sent.span_on(token)
-        sent.span_off(sent.tokens[-1])
+        # sent.span_splitter()
 
-        for span in sent.spans:
-            span.type()
+        for j in xrange(len(sent.tokens)-1, -1, -1):
+            if u'PR' in sent.tokens[j].pos:
+                sent.chunk = True
+                sent.tokens[j].in_PP = True
+                sent.chunks.append(Chunk())
+                sent.chunks[-1].append(sent.tokens[j])
+                for k in xrange(j+1, len(sent.tokens)):
+                    if not sent.tokens[k].in_PP:
+                        sent.tokens[k].in_PP = True
+                        sent.chunks[-1].append(sent.tokens[j])
+                        if sent.tokens[k].agree(sent.tokens[j]):
+                            sent.chunk = False
+                            break
 
-        for j in xrange(len(sent.spans)-1, -1, -1):
-            if sent.spans[j].alpha:
-                for k in xrange(j+1, len(sent.spans)):
-                    if not sent.spans[k].alpha and not sent.spans[k].in_alpha:
-                        if sent.spans[k].accept_alpha():
-                            if k != j+1:
-                                sent.spans[k].alpha = True
-                                sent.relations.append((j, k))
-                            else:
-                                sent.spans[j].tokens += sent.spans[k].tokens
-                                sent.spans[k].in_alpha = True
-
-        for j in xrange(len(sent.spans)):
-            if not sent.spans[j].alpha and not sent.spans[j].in_alpha and not sent.spans[j].in_beta:
-                sent.spans[j].beta = True
-                for k in xrange(j+1, len(sent.spans)):
-                    if sent.spans[k].accept_beta():
-                        if k != j+1:
-                            sent.spans[k].beta = True
-                            sent.relations.append((j, k))
-                        else:
-                            sent.spans[j].tokens += sent.spans[k].tokens
-                            sent.spans[k].in_beta = True
-
-        for span in sent.spans:
-            if span.alpha or span.beta:
-                span.begin = span.tokens[0].begin
-                span.end = span.tokens[-1].end
+        # for span in sent.spans:
+        #     span.type()
+        #
+        # sent.get_alpha()
+        #
+        # sent.get_beta()
+        #
+        # for span in sent.spans:
+        #     span.get_boundaries()
 
     # write_brat_sent(newText, item[1])
 

@@ -27,6 +27,14 @@ class Text:
         if self.sentence:
             self.sentence = False
 
+    def sentence_splitter(self, item):
+        for i in xrange(len(item[0])):
+            self.sentence_on()
+            self.add_token(item[0][i]) if i == len(item[0])-1 else self.add_token(item[0][i], item[0][i+1])
+            if self.end_of_sentence():
+                self.sentence_off()
+        self.sentence_off()
+
     def end_of_sentence(self):
         if self.sentences[-1].tokens[-1].pos == u'PERIOD':  # if it is a period
             if self.sentences[-1].tokens[-1].next_token_title:  # if the next token is uppercase
@@ -93,6 +101,7 @@ class Sentence:
     def __init__(self):
         self.tokens = []
         self.spans = []
+        self.chunks = []
         self.relations = []
         self.after_name = [False, 0]
         self.after_abbreviation = False
@@ -114,20 +123,62 @@ class Sentence:
             self.spans[-1].end = self.spans[-1].tokens[-1].end
             # self.spans[-1].content = u''.join(self.spans[-1].tokens)
 
+    def span_splitter(self):
+        self.span_splitter()
+        for token in self.tokens:
+            self.span_on(token)
+            self.add_token(token)
+            if token.end_of_span():
+                self.span_off(token)
+            else:
+                self.span_on(token)
+        self.span_off(self.tokens[-1])
+
+    def get_alpha(self):
+        for j in xrange(len(self.spans)-1, -1, -1):
+            if self.spans[j].alpha:
+                for k in xrange(j+1, len(self.spans)):
+                    if not self.spans[k].alpha and not self.spans[k].in_alpha:
+                        if self.spans[k].accept_alpha():
+                            if k != j+1:
+                                self.spans[k].alpha = True
+                                self.relations.append((j, k))
+                            else:
+                                self.spans[j].tokens += self.spans[k].tokens
+                                self.spans[k].in_alpha = True
+
+    def get_beta(self):
+        for j in xrange(len(self.spans)):
+            if not self.spans[j].alpha and not self.spans[j].in_alpha and not self.spans[j].in_beta:
+                self.spans[j].beta = True
+                for k in xrange(j+1, len(self.spans)):
+                    if self.spans[k].accept_beta():
+                        if k != j+1:
+                            self.spans[k].beta = True
+                            self.relations.append((j, k))
+                        else:
+                            self.spans[j].tokens += self.spans[k].tokens
+                            self.spans[k].in_beta = True
+
 
 class Token:
     def __init__(self):
         self.content = u''
         self.pos = u''
+        self.case = []
         self.begin = 0
         self.end = 0
         self.after_name = False
         self.after_abbreviation = False
         self.next_token_title = False
         self.next_token_name = False
+        self.in_PP = False
 
     def end_of_span(self):
         return self.pos == u'COMMA'
+
+    def agree(self, other):
+        return self.case == other.case
 
 
 class Span:
@@ -159,6 +210,18 @@ class Span:
                 self.finite = True
                 break
         return not self.finite
+
+    def get_boundaries(self):
+        if self.alpha or self.beta:
+            self.begin = self.tokens[0].begin
+            self.end = self.tokens[-1].end
+
+
+class Chunk:
+    def __init__(self):
+        self.begin = 0
+        self.end = 0
+        self.tokens = []
 
 
 def inserted(span):
