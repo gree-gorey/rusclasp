@@ -59,7 +59,14 @@ class Text:
         self.sentences[-1].tokens[-1].content = token[u'text']
         if u'analysis' in token:
             if token[u'analysis']:
-                self.sentences[-1].tokens[-1].pos = token[u'analysis'][0][u'gr']
+                analysis = token[u'analysis'][0][u'gr'].split(u'=')
+                self.sentences[-1].tokens[-1].pos = analysis[0].split(u',')[0]
+                if len(analysis) > 1:
+                    analysis[1] = analysis[1].replace(u'(', u'')
+                    analysis[1] = analysis[1].replace(u')', u'')
+                    self.sentences[-1].tokens[-1].inflection.append(x.split(u',') for x in analysis[1].split(u'|'))
+                if self.sentences[-1].tokens[-1].pos == u'S':
+                    self.sentences[-1].tokens[-1].gender = analysis[0].split(u',')[-2]
             else:
                 self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
         else:
@@ -116,7 +123,7 @@ class Sentence:
             self.spans.append(Span())
             self.spans[-1].begin = token.begin
 
-    def span_off(self, token):
+    def span_off(self):
         if self.span:
             self.span = False
             self.spans[-1].tokens.pop()
@@ -129,10 +136,10 @@ class Sentence:
             self.span_on(token)
             self.add_token(token)
             if token.end_of_span():
-                self.span_off(token)
+                self.span_off()
             else:
                 self.span_on(token)
-        self.span_off(self.tokens[-1])
+        self.span_off()
 
     def get_alpha(self):
         for j in xrange(len(self.spans)-1, -1, -1):
@@ -165,7 +172,8 @@ class Token:
     def __init__(self):
         self.content = u''
         self.pos = u''
-        self.case = []
+        self.inflection = []
+        self.gender = u''
         self.begin = 0
         self.end = 0
         self.after_name = False

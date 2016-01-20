@@ -14,19 +14,22 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
     for sent in newText.sentences:
         # sent.span_splitter()
 
-        for j in xrange(len(sent.tokens)-1, -1, -1):
-            if u'PR' in sent.tokens[j].pos:
-                sent.chunk = True
-                sent.tokens[j].in_PP = True
-                sent.chunks.append(Chunk())
-                sent.chunks[-1].append(sent.tokens[j])
-                for k in xrange(j+1, len(sent.tokens)):
-                    if not sent.tokens[k].in_PP:
-                        sent.tokens[k].in_PP = True
-                        sent.chunks[-1].append(sent.tokens[j])
-                        if sent.tokens[k].agree(sent.tokens[j]):
-                            sent.chunk = False
-                            break
+        for token in sent.tokens:
+            print token.content, token.inflection, token.gender
+
+        # for j in xrange(len(sent.tokens)-1, -1, -1):
+        #     if u'PR' in sent.tokens[j].pos:
+        #         sent.chunk = True
+        #         sent.tokens[j].in_PP = True
+        #         sent.chunks.append(Chunk())
+        #         sent.chunks[-1].append(sent.tokens[j])
+        #         for k in xrange(j+1, len(sent.tokens)):
+        #             if not sent.tokens[k].in_PP:
+        #                 sent.tokens[k].in_PP = True
+        #                 sent.chunks[-1].append(sent.tokens[j])
+        #                 if sent.tokens[k].agree(sent.tokens[j]):
+        #                     sent.chunk = False
+        #                     break
 
         # for span in sent.spans:
         #     span.type()
