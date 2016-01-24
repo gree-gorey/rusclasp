@@ -14,8 +14,15 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
     for sent in newText.sentences:
         # sent.span_splitter()
 
-        for token in sent.tokens:
-            print token.content, token.inflection, token.gender
+        # sent.find_np()
+        sent.find_pp()
+        # sent.eliminate_commas()
+
+        # for token in sent.tokens:
+        #     print token.pos, token.content
+
+                        # print sent.tokens[j].gender, sent.tokens[j].inflection[0], sent.tokens[j].inflection[1]
+
 
         # for j in xrange(len(sent.tokens)-1, -1, -1):
         #     if u'PR' in sent.tokens[j].pos:

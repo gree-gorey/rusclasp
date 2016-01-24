@@ -3,14 +3,14 @@
 import os
 import codecs
 import json
+import copy
 from pymystem3 import Mystem
 
 __author__ = u'Gree-gorey'
 
 m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
-# ins = [line.rstrip(u'\n') for line in codecs.open(u'/home/gree-gorey/Py/CourseWork/lists/inserted.txt', u'r',
-#                                                   u'utf-8')]
+prepositions = json.load(codecs.open(u'prepositions.json', u'r', u'utf-8'))
 
 
 class Text:
@@ -64,9 +64,14 @@ class Text:
                 if len(analysis) > 1:
                     analysis[1] = analysis[1].replace(u'(', u'')
                     analysis[1] = analysis[1].replace(u')', u'')
-                    self.sentences[-1].tokens[-1].inflection.append(x.split(u',') for x in analysis[1].split(u'|'))
+                    self.sentences[-1].tokens[-1].inflection = copy.deepcopy(
+                            [x.split(u',') for x in analysis[1].split(u'|')])
                 if self.sentences[-1].tokens[-1].pos == u'S':
                     self.sentences[-1].tokens[-1].gender = analysis[0].split(u',')[-2]
+                if self.sentences[-1].tokens[-1].pos == u'PR':
+                    if self.sentences[-1].tokens[-1].content in prepositions:
+                        self.sentences[-1].tokens[-1].inflection = copy.deepcopy(
+                                prepositions[self.sentences[-1].tokens[-1].content])
             else:
                 self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
         else:
@@ -89,7 +94,7 @@ class Text:
                                     if u'сокр' in next_token[u'analysis'][0][u'gr']:
                                         self.sentences[-1].tokens[-1].next_token_title = False
                 else:
-                    self.sentences[-1].tokens[-1].pos = u'PUNCT'
+                    self.sentences[-1].tokens[-1].pos = u'MARK'
         if self.sentences[-1].after_name[0]:
             if self.sentences[-1].after_name[1] <= 5:
                 self.sentences[-1].tokens[-1].after_name = True
@@ -110,6 +115,8 @@ class Sentence:
         self.spans = []
         self.chunks = []
         self.relations = []
+        self.np = []
+        self.pp = []
         self.after_name = [False, 0]
         self.after_abbreviation = False
         self.span = False
@@ -167,6 +174,41 @@ class Sentence:
                             self.spans[j].tokens += self.spans[k].tokens
                             self.spans[k].in_beta = True
 
+    def find_np(self):
+        last_noun = -1
+        for i in xrange(len(self.tokens)):
+            if i > last_noun:
+                if self.tokens[i].pos == u'A':
+                    for j in xrange(i+1, len(self.tokens)):
+                        if self.tokens[j].pos == u'S':
+                            if self.tokens[i].agree_adj_noun(self.tokens[j]):
+                                last_noun = j
+                                self.np.append([i, j])
+                            break
+
+    def find_pp(self):
+        for i in xrange(len(self.tokens)-1, 0, -1):
+            if self.tokens[i].pos == u'PR':
+                print self.tokens[i].content
+                for j in xrange(i+1, len(self.tokens)):
+                    if not self.tokens[j].in_pp:
+                        self.tokens[j].in_pp = True
+                        if self.tokens[j].pos == u'S':
+                            if self.tokens[i].agree_pr_noun(self.tokens[j]):
+                                print self.tokens[j].content
+                                self.pp.append([i, j])
+                            break
+
+    def eliminate_commas(self):
+        for pair in self.np:
+            for token in self.tokens[pair[0]+1: pair[1]]:
+                if token.pos == u'COMMA':
+                    token.pos = u'pseudoCOMMA'
+        for pair in self.pp:
+            for token in self.tokens[pair[0]+1: pair[1]]:
+                if token.pos == u'COMMA':
+                    token.pos = u'pseudoCOMMA'
+
 
 class Token:
     def __init__(self):
@@ -180,13 +222,22 @@ class Token:
         self.after_abbreviation = False
         self.next_token_title = False
         self.next_token_name = False
-        self.in_PP = False
+        self.in_pp = False
 
     def end_of_span(self):
         return self.pos == u'COMMA'
 
-    def agree(self, other):
-        return self.case == other.case
+    def agree_adj_noun(self, other):
+        for varI in self.inflection:
+            if other.gender in varI or u'мн' in varI:
+                for varJ in other.inflection:
+                    if varJ[0] in varI and varJ[1] in varI:
+                        return True
+
+    def agree_pr_noun(self, other):
+        for var in other.inflection:
+            if var[0] in self.inflection:
+                return True
 
 
 class Span:
