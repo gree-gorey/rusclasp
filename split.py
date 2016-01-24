@@ -16,10 +16,12 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
 
         # sent.find_np()
         sent.find_pp()
-        # sent.eliminate_commas()
+        sent.eliminate_and_disambiguate()
 
-        # for token in sent.tokens:
-        #     print token.pos, token.content
+        for token in sent.tokens:
+            if token.pos == u'S':
+                for var in token.inflection:
+                    print token.content, var[0]
 
                         # print sent.tokens[j].gender, sent.tokens[j].inflection[0], sent.tokens[j].inflection[1]
 

@@ -69,9 +69,10 @@ class Text:
                 if self.sentences[-1].tokens[-1].pos == u'S':
                     self.sentences[-1].tokens[-1].gender = analysis[0].split(u',')[-2]
                 if self.sentences[-1].tokens[-1].pos == u'PR':
-                    if self.sentences[-1].tokens[-1].content in prepositions:
+                    if token[u'analysis'][0][u'lex'] in prepositions:
+                        # print prepositions[token[u'analysis'][0][u'lex']][0]
                         self.sentences[-1].tokens[-1].inflection = copy.deepcopy(
-                                prepositions[self.sentences[-1].tokens[-1].content])
+                                prepositions[token[u'analysis'][0][u'lex']])
             else:
                 self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
         else:
@@ -187,19 +188,20 @@ class Sentence:
                             break
 
     def find_pp(self):
-        for i in xrange(len(self.tokens)-1, 0, -1):
+        for i in xrange(len(self.tokens)-1, -1, -1):
             if self.tokens[i].pos == u'PR':
-                print self.tokens[i].content
+                # print self.tokens[i].content
                 for j in xrange(i+1, len(self.tokens)):
+                    # print self.tokens[j].content
                     if not self.tokens[j].in_pp:
                         self.tokens[j].in_pp = True
                         if self.tokens[j].pos == u'S':
                             if self.tokens[i].agree_pr_noun(self.tokens[j]):
-                                print self.tokens[j].content
                                 self.pp.append([i, j])
-                            break
+                                # print self.tokens[j].content
+                                break
 
-    def eliminate_commas(self):
+    def eliminate_and_disambiguate(self):
         for pair in self.np:
             for token in self.tokens[pair[0]+1: pair[1]]:
                 if token.pos == u'COMMA':
@@ -208,6 +210,13 @@ class Sentence:
             for token in self.tokens[pair[0]+1: pair[1]]:
                 if token.pos == u'COMMA':
                     token.pos = u'pseudoCOMMA'
+                elif token.pos == u'S':
+                    if len(token.inflection) > 1:
+                        new_inflection = []
+                        for var in token.inflection:
+                            if u'им' not in var:
+                                new_inflection.append(var)
+                        token.inflection = new_inflection
 
 
 class Token:
