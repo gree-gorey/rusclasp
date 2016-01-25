@@ -139,7 +139,6 @@ class Sentence:
             # self.spans[-1].content = u''.join(self.spans[-1].tokens)
 
     def span_splitter(self):
-        self.span_splitter()
         for token in self.tokens:
             self.span_on(token)
             self.add_token(token)
@@ -176,16 +175,24 @@ class Sentence:
                             self.spans[k].in_beta = True
 
     def find_np(self):
-        last_noun = -1
-        for i in xrange(len(self.tokens)):
-            if i > last_noun:
+        for i in xrange(len(self.tokens)-1, -1, -1):
+            # if self.tokens[i].in_pp:
+            #     print self.tokens[i].content
+            if not self.tokens[i].in_pp:
                 if self.tokens[i].pos == u'A':
+                    print self.tokens[i].content
                     for j in xrange(i+1, len(self.tokens)):
-                        if self.tokens[j].pos == u'S':
-                            if self.tokens[i].agree_adj_noun(self.tokens[j]):
-                                last_noun = j
-                                self.np.append([i, j])
-                            break
+                        # print self.tokens[j].content
+                        if not self.tokens[j].in_pp:
+                            if not self.tokens[j].in_np:
+                                # self.tokens[j].in_pp = True
+                                if self.tokens[j].pos == u'S':
+                                    if self.tokens[i].agree_adj_noun(self.tokens[j]):
+                                        self.np.append([i, j])
+                                        print self.tokens[j].content
+                                        for k in xrange(i, j+1):
+                                            self.tokens[k].in_np = True
+                                        break
 
     def find_pp(self):
         for i in xrange(len(self.tokens)-1, -1, -1):
@@ -232,6 +239,7 @@ class Token:
         self.next_token_title = False
         self.next_token_name = False
         self.in_pp = False
+        self.in_np = False
 
     def end_of_span(self):
         return self.pos == u'COMMA'
@@ -284,12 +292,10 @@ class Span:
             self.begin = self.tokens[0].begin
             self.end = self.tokens[-1].end
 
-
-class Chunk:
-    def __init__(self):
-        self.begin = 0
-        self.end = 0
-        self.tokens = []
+    def clear_boundaries(self):
+        if self.tokens[0].content == u'\"':
+            self.tokens.remove(self.tokens[0])
+            self.begin = self.tokens[0].begin
 
 
 def inserted(span):

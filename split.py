@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import time
-from structures import Text, read_texts, write_brat_sent, write_clause_ann, Chunk
+from structures import Text, read_texts, write_clause_ann
 
 __author__ = 'Gree-gorey'
 
@@ -12,36 +12,16 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
     newText.sentence_splitter(item)
 
     for sent in newText.sentences:
-        # sent.span_splitter()
 
-        # sent.find_np()
         sent.find_pp()
+        sent.find_np()
         sent.eliminate_and_disambiguate()
 
-        for token in sent.tokens:
-            if token.pos == u'S':
-                for var in token.inflection:
-                    print token.content, var[0]
-
-                        # print sent.tokens[j].gender, sent.tokens[j].inflection[0], sent.tokens[j].inflection[1]
-
-
-        # for j in xrange(len(sent.tokens)-1, -1, -1):
-        #     if u'PR' in sent.tokens[j].pos:
-        #         sent.chunk = True
-        #         sent.tokens[j].in_PP = True
-        #         sent.chunks.append(Chunk())
-        #         sent.chunks[-1].append(sent.tokens[j])
-        #         for k in xrange(j+1, len(sent.tokens)):
-        #             if not sent.tokens[k].in_PP:
-        #                 sent.tokens[k].in_PP = True
-        #                 sent.chunks[-1].append(sent.tokens[j])
-        #                 if sent.tokens[k].agree(sent.tokens[j]):
-        #                     sent.chunk = False
-        #                     break
-
+        # sent.span_splitter()
+        #
         # for span in sent.spans:
         #     span.type()
+        #     span.clear_boundaries()
         #
         # sent.get_alpha()
         #
@@ -52,7 +32,7 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
 
     # write_brat_sent(newText, item[1])
 
-    write_clause_ann(newText, item[1])
+    # write_clause_ann(newText, item[1])
 
     # for sent in newText.sentences:  # удаляем все вводные слова из разметки
     #     remove_inserted(sent)
