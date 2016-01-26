@@ -175,24 +175,25 @@ class Sentence:
                             self.spans[k].in_beta = True
 
     def find_np(self):
-        for i in xrange(len(self.tokens)-1, -1, -1):
-            # if self.tokens[i].in_pp:
-            #     print self.tokens[i].content
-            if not self.tokens[i].in_pp:
-                if self.tokens[i].pos == u'A':
-                    print self.tokens[i].content
-                    for j in xrange(i+1, len(self.tokens)):
-                        # print self.tokens[j].content
-                        if not self.tokens[j].in_pp:
-                            if not self.tokens[j].in_np:
-                                # self.tokens[j].in_pp = True
-                                if self.tokens[j].pos == u'S':
-                                    if self.tokens[i].agree_adj_noun(self.tokens[j]):
-                                        self.np.append([i, j])
-                                        print self.tokens[j].content
-                                        for k in xrange(i, j+1):
-                                            self.tokens[k].in_np = True
-                                        break
+        match = -1
+        for i in xrange(len(self.tokens)):
+            if i > match:
+                if not self.tokens[i].in_pp:
+                    if self.tokens[i].is_adj():
+                        print self.tokens[i].content
+                        for j in xrange(i+1, len(self.tokens)):
+                            # print self.tokens[j].content
+                            if not self.tokens[j].in_pp:
+                                if not self.tokens[j].in_np:
+                                    # self.tokens[j].in_pp = True
+                                    if self.tokens[j].pos == u'S':
+                                        if self.tokens[i].agree_adj_noun(self.tokens[j]):
+                                            self.np.append([i, j])
+                                            print self.tokens[j].content
+                                            for k in xrange(i, j+1):
+                                                self.tokens[k].in_np = True
+                                                match = j
+                                            break
 
     def find_pp(self):
         for i in xrange(len(self.tokens)-1, -1, -1):
@@ -255,6 +256,14 @@ class Token:
         for var in other.inflection:
             if var[0] in self.inflection:
                 return True
+
+    def is_adj(self):
+        if self.pos == u'A':
+            return True
+        elif self.pos == u'V':
+            for var in self.inflection:
+                if u'прич' in var:
+                    return True
 
 
 class Span:
