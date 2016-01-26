@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import time
-from structures import Text, read_texts, write_clause_ann
+from structures import Text, read_texts, write_brat_ann, write_clause_ann
 
 __author__ = 'Gree-gorey'
 
@@ -17,21 +17,21 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
         sent.find_np()
         sent.eliminate_and_disambiguate()
 
-        # sent.span_splitter()
-        #
-        # for span in sent.spans:
-        #     span.type()
-        #     span.clear_boundaries()
-        #
-        # sent.get_alpha()
-        #
-        # sent.get_beta()
-        #
-        # for span in sent.spans:
-        #     span.get_boundaries()
+    write_brat_ann(newText, item[1])
 
-    # write_brat_sent(newText, item[1])
-
+    #     sent.span_splitter()
+    #
+    #     for span in sent.spans:
+    #         span.type()
+    #         span.clear_boundaries()
+    #
+    #     sent.get_alpha()
+    #
+    #     sent.get_beta()
+    #
+    #     for span in sent.spans:
+    #         span.get_boundaries()
+    #
     # write_clause_ann(newText, item[1])
 
     # for sent in newText.sentences:  # удаляем все вводные слова из разметки

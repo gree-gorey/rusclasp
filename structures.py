@@ -60,14 +60,18 @@ class Text:
         if u'analysis' in token:
             if token[u'analysis']:
                 analysis = token[u'analysis'][0][u'gr'].split(u'=')
-                self.sentences[-1].tokens[-1].pos = analysis[0].split(u',')[0]
+                constant = analysis[0].split(u',')
+                self.sentences[-1].tokens[-1].pos = constant[0]
                 if len(analysis) > 1:
                     analysis[1] = analysis[1].replace(u'(', u'')
                     analysis[1] = analysis[1].replace(u')', u'')
                     self.sentences[-1].tokens[-1].inflection = copy.deepcopy(
                             [x.split(u',') for x in analysis[1].split(u'|')])
                 if self.sentences[-1].tokens[-1].pos == u'S':
-                    self.sentences[-1].tokens[-1].gender = analysis[0].split(u',')[-2]
+                    self.sentences[-1].tokens[-1].gender = constant[-2]
+                    if constant[1] in u'мнед':
+                        for var in self.sentences[-1].tokens[-1].inflection:
+                            var.append(constant[1])
                 if self.sentences[-1].tokens[-1].pos == u'PR':
                     if token[u'analysis'][0][u'lex'] in prepositions:
                         # print prepositions[token[u'analysis'][0][u'lex']][0]
@@ -180,7 +184,7 @@ class Sentence:
             if i > match:
                 if not self.tokens[i].in_pp:
                     if self.tokens[i].is_adj():
-                        print self.tokens[i].content
+                        # print self.tokens[i].content
                         for j in xrange(i+1, len(self.tokens)):
                             # print self.tokens[j].content
                             if not self.tokens[j].in_pp:
@@ -189,7 +193,7 @@ class Sentence:
                                     if self.tokens[j].pos == u'S':
                                         if self.tokens[i].agree_adj_noun(self.tokens[j]):
                                             self.np.append([i, j])
-                                            print self.tokens[j].content
+                                            # print self.tokens[j].content
                                             for k in xrange(i, j+1):
                                                 self.tokens[k].in_np = True
                                                 match = j
@@ -249,8 +253,11 @@ class Token:
         for varI in self.inflection:
             if other.gender in varI or u'мн' in varI:
                 for varJ in other.inflection:
-                    if varJ[0] in varI and varJ[1] in varI:
-                        return True
+                    try:
+                        if varJ[0] in varI and varJ[1] in varI:
+                            return True
+                    except:
+                        print varJ[0], other.content
 
     def agree_pr_noun(self, other):
         for var in other.inflection:
@@ -360,14 +367,19 @@ def write_pos_ann(ann, path):
     w.close()
 
 
-def write_brat_ann(ann, path):
-    name = path[:-3:] + u'ann'
+def write_brat_ann(text, path):
+    name = path[:-4:] + u'ann'
     w = codecs.open(name, u'w', u'utf-8')
     i = 1
-    for token in ann:
-        w.write(u'T' + str(i) + u'\tSpan ' + str(token[u'begin']) + u' ' + str(token[u'end']) + u'\t' + token[u'text'] +
-                u'\n')
-        i += 1
+    for sent in text.sentences:
+        for pp in sent.pp:
+            w.write(u'T' + str(i) + u'\tSpan ' + str(sent.tokens[pp[0]].begin) + u' ' + str(sent.tokens[pp[1]].end) +
+                    u'\n')
+            i += 1
+        for np in sent.np:
+            w.write(u'T' + str(i) + u'\tSpan ' + str(sent.tokens[np[0]].begin) + u' ' + str(sent.tokens[np[1]].end) +
+                    u'\n')
+            i += 1
     w.close()
 
 
