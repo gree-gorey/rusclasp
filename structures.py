@@ -11,7 +11,7 @@ __author__ = u'Gree-gorey'
 m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
 prepositions = json.load(codecs.open(u'prepositions.json', u'r', u'utf-8'))
-
+complimentizers = json.load(codecs.open(u'complimentizers.json', u'r', u'utf-8'))
 
 class Text:
     def __init__(self):
@@ -285,9 +285,21 @@ class Span:
         self.in_beta = False
 
     def type(self):
-        for token in self.tokens:
-            if u'прич' in token.pos and u'полн' in token.pos:
-                self.alpha = True
+        if self.is_alpha():
+            self.alpha = True
+
+    def is_alpha(self):
+        if self.tokens[0] in complimentizers:
+            return True
+        else:
+            for token in self.tokens:
+                if token.content == u'который':
+                    return True
+                elif u'деепр' in token.inflection:
+                    return True
+                elif not token.in_np:
+                    if u'прич' in token.inflection and u'полн' in token.inflection:
+                        return True
 
     def accept_alpha(self):
         for token in self.tokens:

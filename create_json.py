@@ -4,12 +4,14 @@ import codecs
 import json
 
 prep = {}
+comp = []
 
-with codecs.open(u'prepositions.csv', u'r', u'utf-8') as f:
+with codecs.open(u'complimentizers.csv', u'r', u'utf-8') as f:
     for line in f:
-        line = line.rstrip().split(u'\t')
-        prep[line[0]] = line[1].split(u',')
+        line = line.rstrip()
+        comp.append(line)
+        # prep[line[0]] = line[1].split(u',')
 
-w = codecs.open(u'prepositions.json', u'w', u'utf-8')
-json.dump(prep, w, ensure_ascii=False, indent=2)
+w = codecs.open(u'complimentizers.json', u'w', u'utf-8')
+json.dump(comp, w, ensure_ascii=False, indent=2)
 w.close()
