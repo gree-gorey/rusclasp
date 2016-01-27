@@ -13,6 +13,7 @@ m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 prepositions = json.load(codecs.open(u'prepositions.json', u'r', u'utf-8'))
 complimentizers = json.load(codecs.open(u'complimentizers.json', u'r', u'utf-8'))
 
+
 class Text:
     def __init__(self):
         self.sentences = []
@@ -62,6 +63,7 @@ class Text:
                 analysis = token[u'analysis'][0][u'gr'].split(u'=')
                 constant = analysis[0].split(u',')
                 self.sentences[-1].tokens[-1].pos = constant[0]
+                self.sentences[-1].tokens[-1].lex = token[u'analysis'][0][u'lex']
                 if len(analysis) > 1:
                     analysis[1] = analysis[1].replace(u'(', u'')
                     analysis[1] = analysis[1].replace(u')', u'')
@@ -234,6 +236,7 @@ class Sentence:
 class Token:
     def __init__(self):
         self.content = u''
+        self.lex = u''
         self.pos = u''
         self.inflection = []
         self.gender = u''
@@ -289,17 +292,18 @@ class Span:
             self.alpha = True
 
     def is_alpha(self):
-        if self.tokens[0] in complimentizers:
+        if self.tokens[0].lex in complimentizers:
             return True
         else:
             for token in self.tokens:
-                if token.content == u'который':
+                if token.lex == u'который':
                     return True
-                elif u'деепр' in token.inflection:
-                    return True
-                elif not token.in_np:
-                    if u'прич' in token.inflection and u'полн' in token.inflection:
-                        return True
+                else:
+                    for var in token.inflection:
+                        if u'прич' in var and u'полн' in var:
+                            return True
+                        elif u'деепр' in var:
+                            return True
 
     def accept_alpha(self):
         for token in self.tokens:
@@ -353,16 +357,16 @@ def remove_inserted(sent):
 
 def write_clause_ann(text, path):
     i = 0
-    j = 0
+    # j = 0
 
     write_name = path.replace(u'json', u'ann')
     w = codecs.open(write_name, u'w', u'utf-8')
 
     for sent in text.sentences:
-        for r in sent.relations:
-            j += 1
-            line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i) + u'\t' + u'\n'
-            w.write(line)
+        # for r in sent.relations:
+        #     j += 1
+        #     line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i) + u'\t' + u'\n'
+        #     w.write(line)
         for span in sent.spans:
             if span.alpha or span.beta:
                 i += 1

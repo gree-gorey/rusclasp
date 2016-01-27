@@ -14,25 +14,25 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
     for sent in newText.sentences:
 
         sent.find_pp()
-        sent.find_np()
+        # sent.find_np()
         sent.eliminate_and_disambiguate()
 
-    write_brat_ann(newText, item[1])
+    # write_brat_ann(newText, item[1])
 
-    #     sent.span_splitter()
-    #
-    #     for span in sent.spans:
-    #         span.type()
-    #         span.clear_boundaries()
+        sent.span_splitter()
+
+        for span in sent.spans:
+            span.type()
+            span.clear_boundaries()
     #
     #     sent.get_alpha()
     #
     #     sent.get_beta()
     #
-    #     for span in sent.spans:
-    #         span.get_boundaries()
-    #
-    # write_clause_ann(newText, item[1])
+        # for span in sent.spans:
+        #     span.get_boundaries()
+
+    write_clause_ann(newText, item[1])
 
     # for sent in newText.sentences:  # удаляем все вводные слова из разметки
     #     remove_inserted(sent)
