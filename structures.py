@@ -53,60 +53,7 @@ class Text:
                 return False
         return False
 
-    def add_token(self, token, next_token=None):
-        self.sentences[-1].tokens.append(Token())
-        self.sentences[-1].tokens[-1].begin = token[u'begin']
-        self.sentences[-1].tokens[-1].end = token[u'end']
-        self.sentences[-1].tokens[-1].content = token[u'text']
-        if u'analysis' in token:
-            if token[u'analysis']:
-                analysis = token[u'analysis'][0][u'gr'].split(u'=')
-                constant = analysis[0].split(u',')
-                self.sentences[-1].tokens[-1].pos = constant[0]
-                self.sentences[-1].tokens[-1].lex = token[u'analysis'][0][u'lex']
-                if len(analysis) > 1:
-                    analysis[1] = analysis[1].replace(u'(', u'')
-                    analysis[1] = analysis[1].replace(u')', u'')
-                    self.sentences[-1].tokens[-1].inflection = copy.deepcopy(
-                            [x.split(u',') for x in analysis[1].split(u'|')])
-                if self.sentences[-1].tokens[-1].pos == u'S':
-                    self.sentences[-1].tokens[-1].gender = constant[-2]
-                    if constant[1] in u'мнед':
-                        for var in self.sentences[-1].tokens[-1].inflection:
-                            var.append(constant[1])
-                if self.sentences[-1].tokens[-1].pos == u'PR':
-                    if token[u'analysis'][0][u'lex'] in prepositions:
-                        # print prepositions[token[u'analysis'][0][u'lex']][0]
-                        self.sentences[-1].tokens[-1].inflection = copy.deepcopy(
-                                prepositions[token[u'analysis'][0][u'lex']])
-            else:
-                self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
-        else:
-            if token[u'text'] == u' ':
-                self.sentences[-1].tokens[-1].pos = u'SPACE'
-            else:
-                if u',' in token[u'text']:
-                    self.sentences[-1].tokens[-1].pos = u'COMMA'
-                    if len(self.sentences[-1].tokens) > 1:
-                        if self.sentences[-1].tokens[-2].content.isdigit():
-                            if next_token is not None:
-                                if next_token[u'text'].isdigit():
-                                    self.sentences[-1].tokens[-1].pos = u'pseudoCOMMA'
-                elif u'.' in token[u'text']:
-                    self.sentences[-1].tokens[-1].pos = u'PERIOD'
-                    if self.sentences[-1].after_abbreviation:
-                        self.sentences[-1].tokens[-1].after_abbreviation = True
-                    if next_token is not None:
-                        if next_token[u'text'].istitle() or next_token[u'text'] == u'\"':
-                            self.sentences[-1].tokens[-1].next_token_title = True
-                            if u'analysis' in next_token:
-                                if next_token[u'analysis'] is not []:
-                                    if u'фам' in next_token[u'analysis'][0][u'gr']:
-                                        self.sentences[-1].tokens[-1].next_token_name = True
-                                    if u'сокр' in next_token[u'analysis'][0][u'gr']:
-                                        self.sentences[-1].tokens[-1].next_token_title = False
-                else:
-                    self.sentences[-1].tokens[-1].pos = u'MARK'
+    def after_name(self):
         if self.sentences[-1].after_name[0]:
             if self.sentences[-1].after_name[1] <= 5:
                 self.sentences[-1].tokens[-1].after_name = True
@@ -120,6 +67,68 @@ class Text:
         else:
             self.sentences[-1].after_abbreviation = False
 
+    def add_punctuation(self, token, next_token):
+        if token[u'text'] == u' ':
+            self.sentences[-1].tokens[-1].pos = u'SPACE'
+        else:
+            if u',' in token[u'text']:
+                self.sentences[-1].tokens[-1].pos = u'COMMA'
+                if len(self.sentences[-1].tokens) > 1:
+                    if self.sentences[-1].tokens[-2].content.isdigit():
+                        if next_token is not None:
+                            if next_token[u'text'].isdigit():
+                                self.sentences[-1].tokens[-1].pos = u'pseudoCOMMA'
+            elif u'.' in token[u'text']:
+                self.sentences[-1].tokens[-1].pos = u'PERIOD'
+                if self.sentences[-1].after_abbreviation:
+                    self.sentences[-1].tokens[-1].after_abbreviation = True
+                if next_token is not None:
+                    if next_token[u'text'].istitle() or next_token[u'text'] == u'\"':
+                        self.sentences[-1].tokens[-1].next_token_title = True
+                        if u'analysis' in next_token:
+                            if next_token[u'analysis'] is not []:
+                                if u'фам' in next_token[u'analysis'][0][u'gr']:
+                                    self.sentences[-1].tokens[-1].next_token_name = True
+                                if u'сокр' in next_token[u'analysis'][0][u'gr']:
+                                    self.sentences[-1].tokens[-1].next_token_title = False
+            else:
+                self.sentences[-1].tokens[-1].pos = u'MARK'
+
+    def add_word(self, token):
+        if token[u'analysis']:
+            analysis = token[u'analysis'][0][u'gr'].split(u'=')
+            constant = analysis[0].split(u',')
+            self.sentences[-1].tokens[-1].pos = constant[0]
+            self.sentences[-1].tokens[-1].lex = token[u'analysis'][0][u'lex']
+            if len(analysis) > 1:
+                analysis[1] = analysis[1].replace(u'(', u'')
+                analysis[1] = analysis[1].replace(u')', u'')
+                self.sentences[-1].tokens[-1].inflection = copy.deepcopy(
+                        [x.split(u',') for x in analysis[1].split(u'|')])
+            if self.sentences[-1].tokens[-1].pos == u'S':
+                self.sentences[-1].tokens[-1].gender = constant[-2]
+                if constant[1] in u'мнед':
+                    for var in self.sentences[-1].tokens[-1].inflection:
+                        var.append(constant[1])
+            if self.sentences[-1].tokens[-1].pos == u'PR':
+                if token[u'analysis'][0][u'lex'] in prepositions:
+                    # print prepositions[token[u'analysis'][0][u'lex']][0]
+                    self.sentences[-1].tokens[-1].inflection = copy.deepcopy(
+                            prepositions[token[u'analysis'][0][u'lex']])
+        else:
+            self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
+
+    def add_token(self, token, next_token=None):
+        self.sentences[-1].tokens.append(Token())
+        self.sentences[-1].tokens[-1].begin = token[u'begin']
+        self.sentences[-1].tokens[-1].end = token[u'end']
+        self.sentences[-1].tokens[-1].content = token[u'text']
+        if u'analysis' in token:
+            self.add_word(token)
+        else:
+            self.add_punctuation(token, next_token)
+        self.after_name()
+
 
 class Sentence:
     def __init__(self):
@@ -132,6 +141,12 @@ class Sentence:
         self.after_name = [False, 0]
         self.after_abbreviation = False
         self.span = False
+
+    def contain_structure(self):
+        for token in self.tokens:
+            for var in token.inflection:
+                if u'деепр' in var:
+                    return True
 
     def add_token(self, token):
         self.spans[-1].tokens.append(token)
@@ -165,7 +180,7 @@ class Sentence:
                 last_added = j
                 for k in xrange(j+1, len(self.spans)):
                     if not self.spans[k].alpha and not self.spans[k].in_alpha:
-                        if not self.spans[k].forbid_alpha():
+                        if self.spans[k].accept_alpha():
                             if k != last_added+1:
                                 self.spans[k].alpha = True
                                 self.relations.append((j, k))
@@ -318,24 +333,38 @@ class Span:
                             self.alpha_type = u'adverbial'
                             return True
 
-    def forbid_alpha(self):
-        if self.alpha_type == u'adverbial':
-            for token in self.tokens:
-                if token.pos == u'V':
-                    for var in token.inflection:
-                        if u'инф' not in var and u'прич' not in var:
-                            return True
-                elif token.pos == u'S':
-                    for var in token.inflection:
-                        if u'им' in var:
-                            return True
+    def accept_alpha(self):
+        if self.alpha_type == u'adverbial' or self.alpha_type == u'participle':
+            return self.infinite()
+        elif self.alpha_type == u'relative' or self.alpha_type == u'complement':
+            return self.finite()
+
+    def infinite(self):
+        for token in self.tokens:
+            if token.pos == u'V':
+                for var in token.inflection:
+                    if u'инф' not in var and u'прич' not in var:
+                        return False
+            elif token.pos == u'S':
+                for var in token.inflection:
+                    if u'им' in var:
+                        return False
+
+    def finite(self):
+        for token in self.tokens:
+            if token.pos == u'V':
+                for var in token.inflection:
+                    if u'инф' not in var and u'прич' not in var:
+                        return False
+            elif token.pos == u'S':
+                for var in token.inflection:
+                    if u'им' in var:
+                        return False
 
     def accept_beta(self):
         for token in self.tokens:
             if u'V' in token.pos:
-                self.finite = True
-                break
-        return not self.finite
+                return True
 
     def get_boundaries(self):
         if self.alpha or self.beta:
