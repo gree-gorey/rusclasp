@@ -87,6 +87,11 @@ class Text:
             else:
                 if u',' in token[u'text']:
                     self.sentences[-1].tokens[-1].pos = u'COMMA'
+                    if len(self.sentences[-1].tokens) > 1:
+                        if self.sentences[-1].tokens[-2].content.isdigit():
+                            if next_token is not None:
+                                if next_token[u'text'].isdigit():
+                                    self.sentences[-1].tokens[-1].pos = u'pseudoCOMMA'
                 elif u'.' in token[u'text']:
                     self.sentences[-1].tokens[-1].pos = u'PERIOD'
                     if self.sentences[-1].after_abbreviation:
@@ -154,20 +159,24 @@ class Sentence:
                 self.span_on(token)
         self.span_off()
 
-    def get_alpha(self):
+    def restore_alpha(self):
         for j in xrange(len(self.spans)-1, -1, -1):
             if self.spans[j].alpha:
+                last_added = j
                 for k in xrange(j+1, len(self.spans)):
                     if not self.spans[k].alpha and not self.spans[k].in_alpha:
-                        if self.spans[k].accept_alpha():
-                            if k != j+1:
+                        if not self.spans[k].forbid_alpha():
+                            if k != last_added+1:
                                 self.spans[k].alpha = True
                                 self.relations.append((j, k))
                             else:
                                 self.spans[j].tokens += self.spans[k].tokens
                                 self.spans[k].in_alpha = True
+                                last_added = k
+                        else:
+                            break
 
-    def get_beta(self):
+    def restore_beta(self):
         for j in xrange(len(self.spans)):
             if not self.spans[j].alpha and not self.spans[j].in_alpha and not self.spans[j].in_beta:
                 self.spans[j].beta = True
@@ -282,8 +291,8 @@ class Span:
         self.begin = 0
         self.end = 0
         self.alpha = False
-        self.finite = False
         self.in_alpha = False
+        self.alpha_type = None
         self.beta = False
         self.in_beta = False
 
@@ -293,24 +302,33 @@ class Span:
 
     def is_alpha(self):
         if self.tokens[0].lex in complimentizers:
+            self.alpha_type = u'complement'
             return True
         else:
             for token in self.tokens:
                 if token.lex == u'который':
+                    self.alpha_type = u'relative'
                     return True
                 else:
                     for var in token.inflection:
                         if u'прич' in var and u'полн' in var:
+                            self.alpha_type = u'participle'
                             return True
                         elif u'деепр' in var:
+                            self.alpha_type = u'adverbial'
                             return True
 
-    def accept_alpha(self):
-        for token in self.tokens:
-            if u'V' in token.pos or u'им' in token.pos:
-                self.finite = True
-                break
-        return self.finite
+    def forbid_alpha(self):
+        if self.alpha_type == u'adverbial':
+            for token in self.tokens:
+                if token.pos == u'V':
+                    for var in token.inflection:
+                        if u'инф' not in var and u'прич' not in var:
+                            return True
+                elif token.pos == u'S':
+                    for var in token.inflection:
+                        if u'им' in var:
+                            return True
 
     def accept_beta(self):
         for token in self.tokens:
