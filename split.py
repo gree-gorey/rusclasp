@@ -28,15 +28,16 @@ for item in newCorpus.read_texts(u'json'):
 
         for span in sent.spans:
             span.type_inserted()
-    #         span.type()
-    #         span.clear_boundaries()
-    #
-    #     sent.restore_alpha()
-    #
+
+            span.type()
+            span.clear_boundaries()
+
+        sent.restore_alpha()
+
     # #     sent.restore_beta()
-    #
-    #     for span in sent.spans:
-    #         span.get_boundaries()
+
+        for span in sent.spans:
+            span.get_boundaries()
 
     newText.write_clause_ann()
 

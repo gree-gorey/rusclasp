@@ -1,13 +1,15 @@
 # -*- coding:utf-8 -*-
 
 import time
-from structures import read_texts, write_pos_ann, pos_analyzer, write_brat_ann
+from structures import Corpus, write_pos_ann, pos_analyzer
 
 __author__ = 'Gree-gorey'
 
 t1 = time.time()
 
-for item in read_texts(u'txt', u'/home/gree-gorey/Corpus/'):
+newCorpus = Corpus(u'/home/gree-gorey/Corpus/')
+
+for item in newCorpus.read_texts(u'txt'):
     # write_brat_ann(item[1])
     ann = pos_analyzer(item[0].replace(u' ', u' '))
     write_pos_ann(ann, item[1])

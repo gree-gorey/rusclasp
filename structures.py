@@ -97,14 +97,14 @@ class Text:
         if token[u'text'] == u' ':
             self.sentences[-1].tokens[-1].pos = u'SPACE'
         else:
-            if u',' in token[u'text'] or u'—' in token[u'text']:
+            if u',' in token[u'text'] or u'—' in token[u'text'] or u'(' in token[u'text'] or u')' in token[u'text']:
                 self.sentences[-1].tokens[-1].pos = u'COMMA'
                 if len(self.sentences[-1].tokens) > 1:
                     if self.sentences[-1].tokens[-2].content.isdigit():
                         if next_token is not None:
                             if next_token[u'text'].isdigit():
                                 self.sentences[-1].tokens[-1].pos = u'pseudoCOMMA'
-            elif u'.' in token[u'text'] or u'…' in token[u'text']:
+            elif u'.' in token[u'text'] or u'…' in token[u'text'] or u'?' in token[u'text'] or u'!' in token[u'text']:
                 self.sentences[-1].tokens[-1].pos = u'PERIOD'
                 if self.sentences[-1].after_abbreviation:
                     self.sentences[-1].tokens[-1].after_abbreviation = True
@@ -158,7 +158,6 @@ class Text:
     def write_clause_ann(self):
         i = 0
         # j = 0
-        k = 0
 
         write_name = self.path.replace(u'json', u'ann')
         w = codecs.open(write_name, u'w', u'utf-8')
@@ -169,15 +168,14 @@ class Text:
             #     line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i)\
             #            + u'\t' + u'\n'
             #     w.write(line)
-            # for span in sent.spans:
-            #     if span.alpha or span.beta:
-            #         i += 1
-            #         line = u'T' + str(i) + u'\t' + u'Span ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-            #         w.write(line)
             for span in sent.spans:
-                if span.inserted:
-                    k += 1
-                    line = u'T' + str(k) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                if span.alpha or span.beta:
+                    i += 1
+                    line = u'T' + str(i) + u'\t' + u'Span ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                    w.write(line)
+                elif span.inserted:
+                    i += 1
+                    line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                     w.write(line)
 
         w.close()
@@ -214,7 +212,10 @@ class Sentence:
         if self.span:
             self.span = False
             self.spans[-1].tokens.pop()
-            self.spans[-1].end = self.spans[-1].tokens[-1].end
+            if len(self.spans[-1].tokens) > 0:
+                self.spans[-1].end = self.spans[-1].tokens[-1].end
+            else:
+                self.spans.pop()
             # self.spans[-1].content = u''.join(self.spans[-1].tokens)
 
     def span_splitter(self):
@@ -233,7 +234,7 @@ class Sentence:
             if self.spans[j].alpha:
                 last_added = j
                 for k in xrange(j+1, len(self.spans)):
-                    if not self.spans[k].alpha and not self.spans[k].in_alpha:
+                    if not self.spans[k].alpha and not self.spans[k].in_alpha and not self.spans[k].inserted:
                         if self.spans[k].accept_alpha():
                             if k != last_added+1:
                                 self.spans[k].alpha = True
@@ -391,22 +392,23 @@ class Span:
                         return True
 
     def is_alpha(self):
-        if self.tokens[0].lex in complimentizers:
-            self.alpha_type = u'complement'
-            return True
-        else:
-            for token in self.tokens:
-                if token.lex == u'который':
-                    self.alpha_type = u'relative'
-                    return True
-                else:
-                    for var in token.inflection:
-                        if u'прич' in var and u'полн' in var:
-                            self.alpha_type = u'participle'
-                            return True
-                        elif u'деепр' in var:
-                            self.alpha_type = u'adverbial'
-                            return True
+        if not self.inserted:
+            if self.tokens[0].lex in complimentizers:
+                self.alpha_type = u'complement'
+                return True
+            else:
+                for token in self.tokens:
+                    if token.lex == u'который':
+                        self.alpha_type = u'relative'
+                        return True
+                    else:
+                        for var in token.inflection:
+                            if u'прич' in var and u'полн' in var:
+                                self.alpha_type = u'participle'
+                                return True
+                            elif u'деепр' in var:
+                                self.alpha_type = u'adverbial'
+                                return True
 
     def accept_alpha(self):
         if self.alpha_type == u'adverbial' or self.alpha_type == u'participle':
