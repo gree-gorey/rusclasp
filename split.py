@@ -1,14 +1,14 @@
 # -*- coding:utf-8 -*-
 
 import time
-from structures import Text, read_texts, write_brat_ann, write_clause_ann
+from structures import Text, read_texts
 
 __author__ = 'Gree-gorey'
 
 t1 = time.time()
 
 for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
-    newText = Text()
+    newText = Text(item[1])
     newText.sentence_splitter(item)
 
     for sent in newText.sentences:
@@ -19,20 +19,24 @@ for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
 
     # write_brat_ann(newText, item[1])
 
+        # for token in sent.tokens:
+        #     print token.content, token.pos
+
         sent.span_splitter()
 
         for span in sent.spans:
-            span.type()
-            span.clear_boundaries()
+            span.type_inserted()
+    #         span.type()
+    #         span.clear_boundaries()
+    #
+    #     sent.restore_alpha()
+    #
+    # #     sent.restore_beta()
+    #
+    #     for span in sent.spans:
+    #         span.get_boundaries()
 
-        sent.restore_alpha()
-
-    #     sent.restore_beta()
-
-        for span in sent.spans:
-            span.get_boundaries()
-
-    write_clause_ann(newText, item[1])
+    newText.write_clause_ann()
 
     # for sent in newText.sentences:  # удаляем все вводные слова из разметки
     #     remove_inserted(sent)

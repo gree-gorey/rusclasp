@@ -12,10 +12,12 @@ m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
 prepositions = json.load(codecs.open(u'prepositions.json', u'r', u'utf-8'))
 complimentizers = json.load(codecs.open(u'complimentizers.json', u'r', u'utf-8'))
+inserted = json.load(codecs.open(u'inserted.json', u'r', u'utf-8'))
 
 
 class Text:
-    def __init__(self):
+    def __init__(self, path):
+        self.path = path
         self.sentences = []
         self.sentence = False
 
@@ -71,14 +73,14 @@ class Text:
         if token[u'text'] == u' ':
             self.sentences[-1].tokens[-1].pos = u'SPACE'
         else:
-            if u',' in token[u'text']:
+            if u',' in token[u'text'] or u'—' in token[u'text']:
                 self.sentences[-1].tokens[-1].pos = u'COMMA'
                 if len(self.sentences[-1].tokens) > 1:
                     if self.sentences[-1].tokens[-2].content.isdigit():
                         if next_token is not None:
                             if next_token[u'text'].isdigit():
                                 self.sentences[-1].tokens[-1].pos = u'pseudoCOMMA'
-            elif u'.' in token[u'text']:
+            elif u'.' in token[u'text'] or u'…' in token[u'text']:
                 self.sentences[-1].tokens[-1].pos = u'PERIOD'
                 if self.sentences[-1].after_abbreviation:
                     self.sentences[-1].tokens[-1].after_abbreviation = True
@@ -129,6 +131,33 @@ class Text:
             self.add_punctuation(token, next_token)
         self.after_name()
 
+    def write_clause_ann(self):
+        i = 0
+        # j = 0
+        k = 0
+
+        write_name = self.path.replace(u'json', u'ann')
+        w = codecs.open(write_name, u'w', u'utf-8')
+
+        for sent in self.sentences:
+            # for r in sent.relations:
+            #     j += 1
+            #     line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i)\
+            #            + u'\t' + u'\n'
+            #     w.write(line)
+            # for span in sent.spans:
+            #     if span.alpha or span.beta:
+            #         i += 1
+            #         line = u'T' + str(i) + u'\t' + u'Span ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+            #         w.write(line)
+            for span in sent.spans:
+                if span.inserted:
+                    k += 1
+                    line = u'T' + str(k) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                    w.write(line)
+
+        w.close()
+
 
 class Sentence:
     def __init__(self):
@@ -166,11 +195,12 @@ class Sentence:
 
     def span_splitter(self):
         for token in self.tokens:
-            self.span_on(token)
-            self.add_token(token)
+            if token.content != u'\"':
+                self.span_on(token)
+                self.add_token(token)
             if token.end_of_span():
                 self.span_off()
-            else:
+            elif token.content != u'\"':
                 self.span_on(token)
         self.span_off()
 
@@ -310,10 +340,31 @@ class Span:
         self.alpha_type = None
         self.beta = False
         self.in_beta = False
+        self.inserted = False
 
     def type(self):
         if self.is_alpha():
             self.alpha = True
+
+    def type_inserted(self):
+        if self.is_inserted():
+            self.inserted = True
+
+    def is_inserted(self):
+        if len(self.tokens) < 10:
+            if self.tokens[0].lex == u'по':
+                if len(self.tokens) > 4:
+                    if self.tokens[2].content == u'словам' or self.tokens[2].content ==\
+                            u'мнению' or self.tokens[4].content == u'словам':
+                        return True
+            if self.tokens[0].content.lower() in inserted:
+                # print self.tokens[0].content.lower()
+                content = u''
+                for token in self.tokens:
+                    content += token.content.lower()
+                for var in inserted[self.tokens[0].content.lower()]:
+                    if var == content:
+                        return True
 
     def is_alpha(self):
         if self.tokens[0].lex in complimentizers:
@@ -377,52 +428,6 @@ class Span:
             self.begin = self.tokens[0].begin
 
 
-def inserted(span):
-    if span.content.lower() in ins:
-        return True
-
-
-def remove_inserted(sent):
-    new_spans = []
-    ins = False
-    for i in xrange(len(sent.spans)):
-        if inserted(sent.spans[i]):
-            if i != 0 and i != len(sent.spans):
-                new_span = Span()
-                new_span.begin = sent.spans[i-1].begin
-                new_span.end = sent.spans[i+1].end
-                new_span.tokens = sent.spans[i-1].tokens + sent.spans[i+1].tokens
-                new_spans.pop()
-                new_spans.append(new_span)
-                ins = True
-        else:
-            if not ins:
-                new_spans.append(sent.spans[i])
-            ins = False
-    sent.spans = new_spans
-
-
-def write_clause_ann(text, path):
-    i = 0
-    # j = 0
-
-    write_name = path.replace(u'json', u'ann')
-    w = codecs.open(write_name, u'w', u'utf-8')
-
-    for sent in text.sentences:
-        # for r in sent.relations:
-        #     j += 1
-        #     line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i) + u'\t' + u'\n'
-        #     w.write(line)
-        for span in sent.spans:
-            if span.alpha or span.beta:
-                i += 1
-                line = u'T' + str(i) + u'\t' + u'Span ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                w.write(line)
-
-    w.close()
-
-
 def write_pos_ann(ann, path):
     name = path[:-3:] + u'json'
     w = codecs.open(name, u'w', u'utf-8')
@@ -430,19 +435,19 @@ def write_pos_ann(ann, path):
     w.close()
 
 
-def write_brat_ann(text, path):
-    name = path[:-4:] + u'ann'
+def write_brat_ann(path):  # text, path):
+    name = path[:-3:] + u'ann'
     w = codecs.open(name, u'w', u'utf-8')
-    i = 1
-    for sent in text.sentences:
-        for pp in sent.pp:
-            w.write(u'T' + str(i) + u'\tSpan ' + str(sent.tokens[pp[0]].begin) + u' ' + str(sent.tokens[pp[1]].end) +
-                    u'\n')
-            i += 1
-        for np in sent.np:
-            w.write(u'T' + str(i) + u'\tSpan ' + str(sent.tokens[np[0]].begin) + u' ' + str(sent.tokens[np[1]].end) +
-                    u'\n')
-            i += 1
+    # i = 1
+    # for sent in text.sentences:
+    #     for pp in sent.pp:
+    #         w.write(u'T' + str(i) + u'\tSpan ' + str(sent.tokens[pp[0]].begin) + u' ' + str(sent.tokens[pp[1]].end) +
+    #                 u'\n')
+    #         i += 1
+    #     for np in sent.np:
+    #         w.write(u'T' + str(i) + u'\tSpan ' + str(sent.tokens[np[0]].begin) + u' ' + str(sent.tokens[np[1]].end) +
+    #                 u'\n')
+    #         i += 1
     w.close()
 
 

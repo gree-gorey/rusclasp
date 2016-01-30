@@ -13,7 +13,7 @@ with codecs.open(u'dict.opcorpora.txt', u'r', u'utf-8') as f:
     for line in f:
         line = line.rstrip().split(u'\t')
         for item in line:
-            if u'PREP' in item:
+            if u'CONJ' in item:
                 output.append(line[0].lower())
 
 with codecs.open(u'output.csv', u'w', u'utf-8') as w:
