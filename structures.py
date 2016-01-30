@@ -10,9 +10,33 @@ __author__ = u'Gree-gorey'
 
 m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
-prepositions = json.load(codecs.open(u'prepositions.json', u'r', u'utf-8'))
-complimentizers = json.load(codecs.open(u'complimentizers.json', u'r', u'utf-8'))
-inserted = json.load(codecs.open(u'inserted.json', u'r', u'utf-8'))
+prepositions = json.load(codecs.open(u'./data/prepositions.json', u'r', u'utf-8'))
+complimentizers = json.load(codecs.open(u'./data/complimentizers.json', u'r', u'utf-8'))
+inserted = json.load(codecs.open(u'./data/inserted.json', u'r', u'utf-8'))
+
+
+class Corpus:
+    def __init__(self, path):
+        self.path = path
+
+    def read_texts(self, extension):
+        for root, dirs, files in os.walk(self.path):
+            for filename in files:
+                if extension in filename:
+                    open_name = self.path + filename
+                    f = codecs.open(open_name, u'r', u'utf-8')
+                    if extension == u'json':
+                        result = json.load(f)
+                    else:
+                        result = f.read()
+                    f.close()
+                    yield result, open_name
+
+# /home/gree-gorey/Corpus/
+# /opt/brat-v1.3_Crunchy_Frog/data/right/collection/'
+
+    def new_text(self, path):
+        return Text(path)
 
 
 class Text:
@@ -472,20 +496,3 @@ def pos_analyzer(text):
         position += len(token[u'text'])
         token[u'end'] = position
     return analysis
-
-
-def read_texts(extension, path):
-    for root, dirs, files in os.walk(path):
-        for filename in files:
-            if extension in filename:
-                open_name = path + filename
-                f = codecs.open(open_name, u'r', u'utf-8')
-                if extension == u'json':
-                    result = json.load(f)
-                else:
-                    result = f.read()
-                f.close()
-                yield result, open_name
-
-# /home/gree-gorey/Corpus/
-# /opt/brat-v1.3_Crunchy_Frog/data/right/collection/'

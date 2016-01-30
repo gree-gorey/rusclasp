@@ -1,14 +1,16 @@
 # -*- coding:utf-8 -*-
 
 import time
-from structures import Text, read_texts
+from structures import Corpus
 
 __author__ = 'Gree-gorey'
 
 t1 = time.time()
 
-for item in read_texts(u'json', u'/home/gree-gorey/Corpus/'):
-    newText = Text(item[1])
+newCorpus = Corpus(u'/home/gree-gorey/Corpus/')
+
+for item in newCorpus.read_texts(u'json'):
+    newText = newCorpus.new_text(item[1])
     newText.sentence_splitter(item)
 
     for sent in newText.sentences:
