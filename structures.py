@@ -42,6 +42,18 @@ class Text:
         self.path = path
         self.sentences = []
         self.sentence = False
+        self.analysis = None
+
+    def pos_analyzer(self):
+        self.result = self.result.replace(u' ', u' ')
+        self.analysis = m.analyze(self.result)
+        position = 0
+        if self.analysis[-1][u'text'] == u'\n':
+            del self.analysis[-1]
+        for token in self.analysis:
+            token[u'begin'] = position
+            position += len(token[u'text'])
+            token[u'end'] = position
 
     def sentence_on(self):
         if not self.sentence:
@@ -183,6 +195,12 @@ class Text:
 
         w.close()
 
+    def write_pos_ann(self):
+        name = self.path[:-3:] + u'json'
+        w = codecs.open(name, u'w', u'utf-8')
+        json.dump(self.analysis, w, ensure_ascii=False, indent=2)
+        w.close()
+
 
 class Sentence:
     def __init__(self):
@@ -251,7 +269,7 @@ class Sentence:
 
     def restore_base(self):
         for j in xrange(len(self.spans)):
-            if not self.spans[j].embedded and not self.spans[j].in_embedded and not self.spans[j].in_base:
+            if not self.spans[j].embedded and not self.spans[j].in_embedded and not self.spans[j].in_base and not self.spans[j].inserted:
                 self.spans[j].base = True
                 # for k in xrange(j+1, len(self.spans)):
                 #     if self.spans[k].accept_base():
@@ -458,13 +476,6 @@ class Span:
             self.begin = self.tokens[0].begin
 
 
-def write_pos_ann(ann, path):
-    name = path[:-3:] + u'json'
-    w = codecs.open(name, u'w', u'utf-8')
-    json.dump(ann, w, ensure_ascii=False, indent=2)
-    w.close()
-
-
 def write_brat_ann(path):  # text, path):
     name = path[:-3:] + u'ann'
     w = codecs.open(name, u'w', u'utf-8')
@@ -491,14 +502,3 @@ def write_brat_sent(text, path):
         i += 1
     w.close()
 
-
-def pos_analyzer(text):
-    analysis = m.analyze(text)
-    position = 0
-    if analysis[-1][u'text'] == u'\n':
-        del analysis[-1]
-    for token in analysis:
-        token[u'begin'] = position
-        position += len(token[u'text'])
-        token[u'end'] = position
-    return analysis
