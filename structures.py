@@ -185,6 +185,17 @@ class Text:
             self.add_punctuation(token, next_token)
         self.after_name()
 
+    def add_tokenTT(self, token, next_token=None):
+        self.sentences[-1].tokens.append(Token())
+        self.sentences[-1].tokens[-1].begin = token[u'begin']
+        self.sentences[-1].tokens[-1].end = token[u'end']
+        self.sentences[-1].tokens[-1].content = token[u'text']
+        if u'analysis' in token:
+            self.add_word(token)
+        else:
+            self.add_punctuation(token, next_token)
+        self.after_name()
+
     def write_clause_ann(self):
         i = 0
         # j = 0
