@@ -63,15 +63,15 @@ class Text:
         position = 0
         new_analysis = []
         for token in self.analysis:
-            new_token = {u'begin': position}
             if token[0] == u'<':
-                new_token[u'text'], new_token[u'gr'], new_token[u'lex'] = None, u'SPACE', None
+                # new_token[u'text'], new_token[u'gr'], new_token[u'lex'] = None, u'SPACE', None
                 position += 1
             else:
+                new_token = {u'begin': position}
                 new_token[u'text'], new_token[u'gr'], new_token[u'lex'] = token.split(u'\t')
                 position += len(new_token[u'text'])
-            new_token[u'end'] = position
-            new_analysis.append(new_token)
+                new_token[u'end'] = position
+                new_analysis.append(new_token)
         self.analysis = new_analysis
 
     def sentence_on(self):
