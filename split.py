@@ -9,48 +9,30 @@ t1 = time.time()
 
 newCorpus = Corpus(u'/home/gree-gorey/Corpus/')
 
-for item in newCorpus.read_texts(u'json'):
-    newText = newCorpus.new_text(item[1])
-    newText.sentence_splitter(item)
-
-    for sent in newText.sentences:
+for text in newCorpus.texts(u'json'):
+    text.sentence_splitter()
+    for sentence in text.sentences:
 
         # sent.find_pp()
         # sent.find_np()
         # sent.eliminate_and_disambiguate()
 
-    # write_brat_ann(newText, item[1])
+        sentence.span_splitter()
 
-        # for token in sent.tokens:
-        #     print token.content, token.pos
-
-        sent.span_splitter()
-
-        for span in sent.spans:
+        for span in sentence.spans:
             span.type_inserted()
 
             span.type()
             span.clear_boundaries()
 
-        sent.restore_alpha()
+        sentence.restore_embedded()
 
-    # #     sent.restore_beta()
+        sentence.restore_base()
 
-        for span in sent.spans:
+        for span in sentence.spans:
             span.get_boundaries()
 
-    newText.write_clause_ann()
-
-    # for sent in newText.sentences:  # удаляем все вводные слова из разметки
-    #     remove_inserted(sent)
-    #     print len(sent.spans)
-    #     for i in xrange(len(sent.spans)):
-    #         if not conj(sent.spans[i].tokens[0]):
-    #             print 1
-    #             if not verb_in_span(sent.spans[i]):
-    #                 print 2
-    #                 w.write(sent.spans[i].content + u'\n')
-
+    text.write_clause_ann()
 
 t2 = time.time()
 

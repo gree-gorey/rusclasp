@@ -19,7 +19,7 @@ class Corpus:
     def __init__(self, path):
         self.path = path
 
-    def read_texts(self, extension):
+    def texts(self, extension):
         for root, dirs, files in os.walk(self.path):
             for filename in files:
                 if extension in filename:
@@ -30,17 +30,15 @@ class Corpus:
                     else:
                         result = f.read()
                     f.close()
-                    yield result, open_name
+                    yield Text(result, open_name)
 
 # /home/gree-gorey/Corpus/
 # /opt/brat-v1.3_Crunchy_Frog/data/right/collection/'
 
-    def new_text(self, path):
-        return Text(path)
-
 
 class Text:
-    def __init__(self, path):
+    def __init__(self, result, path):
+        self.result = result
         self.path = path
         self.sentences = []
         self.sentence = False
@@ -54,10 +52,11 @@ class Text:
         if self.sentence:
             self.sentence = False
 
-    def sentence_splitter(self, item):
-        for i in xrange(len(item[0])):
+    def sentence_splitter(self):
+        for i in xrange(len(self.result)):
             self.sentence_on()
-            self.add_token(item[0][i]) if i == len(item[0])-1 else self.add_token(item[0][i], item[0][i+1])
+            self.add_token(self.result[i]) if i == len(self.result)-1 else self.add_token(self.result[i],
+                                                                                            self.result[i+1])
             if self.end_of_sentence():
                 self.sentence_off()
         self.sentence_off()
@@ -169,9 +168,13 @@ class Text:
             #            + u'\t' + u'\n'
             #     w.write(line)
             for span in sent.spans:
-                if span.alpha or span.beta:
+                if span.embedded:
                     i += 1
-                    line = u'T' + str(i) + u'\t' + u'Span ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                    line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                    w.write(line)
+                elif span.base:
+                    i += 1
+                    line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                     w.write(line)
                 elif span.inserted:
                     i += 1
@@ -229,35 +232,35 @@ class Sentence:
                 self.span_on(token)
         self.span_off()
 
-    def restore_alpha(self):
+    def restore_embedded(self):
         for j in xrange(len(self.spans)-1, -1, -1):
-            if self.spans[j].alpha:
+            if self.spans[j].embedded:
                 last_added = j
                 for k in xrange(j+1, len(self.spans)):
-                    if not self.spans[k].alpha and not self.spans[k].in_alpha and not self.spans[k].inserted:
-                        if self.spans[k].accept_alpha():
+                    if not self.spans[k].embedded and not self.spans[k].in_embedded and not self.spans[k].inserted:
+                        if self.spans[k].accept_embedded():
                             if k != last_added+1:
-                                self.spans[k].alpha = True
+                                self.spans[k].embedded = True
                                 self.relations.append((j, k))
                             else:
                                 self.spans[j].tokens += self.spans[k].tokens
-                                self.spans[k].in_alpha = True
+                                self.spans[k].in_embedded = True
                                 last_added = k
                         else:
                             break
 
-    def restore_beta(self):
+    def restore_base(self):
         for j in xrange(len(self.spans)):
-            if not self.spans[j].alpha and not self.spans[j].in_alpha and not self.spans[j].in_beta:
-                self.spans[j].beta = True
-                for k in xrange(j+1, len(self.spans)):
-                    if self.spans[k].accept_beta():
-                        if k != j+1:
-                            self.spans[k].beta = True
-                            self.relations.append((j, k))
-                        else:
-                            self.spans[j].tokens += self.spans[k].tokens
-                            self.spans[k].in_beta = True
+            if not self.spans[j].embedded and not self.spans[j].in_embedded and not self.spans[j].in_base:
+                self.spans[j].base = True
+                # for k in xrange(j+1, len(self.spans)):
+                #     if self.spans[k].accept_base():
+                #         if k != j+1:
+                #             self.spans[k].base = True
+                #             self.relations.append((j, k))
+                #         else:
+                #             self.spans[j].tokens += self.spans[k].tokens
+                #             self.spans[k].in_base = True
 
     def find_np(self):
         match = -1
@@ -360,16 +363,16 @@ class Span:
         self.tokens = []
         self.begin = 0
         self.end = 0
-        self.alpha = False
-        self.in_alpha = False
-        self.alpha_type = None
-        self.beta = False
-        self.in_beta = False
+        self.embedded = False
+        self.in_embedded = False
+        self.embedded_type = None
+        self.base = False
+        self.in_base = False
         self.inserted = False
 
     def type(self):
-        if self.is_alpha():
-            self.alpha = True
+        if self.is_embedded():
+            self.embedded = True
 
     def type_inserted(self):
         if self.is_inserted():
@@ -391,29 +394,30 @@ class Span:
                     if var == content:
                         return True
 
-    def is_alpha(self):
+    def is_embedded(self):
         if not self.inserted:
             if self.tokens[0].lex in complimentizers:
-                self.alpha_type = u'complement'
-                return True
+                self.embedded_type = u'complement'
+                return False
             else:
                 for token in self.tokens:
                     if token.lex == u'который':
-                        self.alpha_type = u'relative'
-                        return True
+                        self.embedded_type = u'relative'
+                        return False
                     else:
                         for var in token.inflection:
-                            if u'прич' in var and u'полн' in var:
-                                self.alpha_type = u'participle'
+                            if u'деепр' in var:
+                                self.embedded_type = u'adverbial'
                                 return True
-                            elif u'деепр' in var:
-                                self.alpha_type = u'adverbial'
-                                return True
+            # for var in self.tokens[0].inflection:
+            #     if u'прич' in var and u'полн' in var:
+            #         self.embedded_type = u'participle'
+            #         return True
 
-    def accept_alpha(self):
-        if self.alpha_type == u'adverbial' or self.alpha_type == u'participle':
+    def accept_embedded(self):
+        if self.embedded_type == u'adverbial' or self.embedded_type == u'participle':
             return self.infinite()
-        elif self.alpha_type == u'relative' or self.alpha_type == u'complement':
+        elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
             return self.finite()
 
     def infinite(self):
@@ -438,13 +442,13 @@ class Span:
                     if u'им' in var:
                         return False
 
-    def accept_beta(self):
+    def accept_base(self):
         for token in self.tokens:
             if u'V' in token.pos:
                 return True
 
     def get_boundaries(self):
-        if self.alpha or self.beta:
+        if self.embedded or self.base:
             self.begin = self.tokens[0].begin
             self.end = self.tokens[-1].end
 
