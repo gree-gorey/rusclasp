@@ -5,10 +5,12 @@ import codecs
 import json
 import copy
 from pymystem3 import Mystem
+import treetaggerwrapper
 
 __author__ = u'Gree-gorey'
 
 m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
+t = treetaggerwrapper.TreeTagger(TAGLANG=u'ru')
 
 prepositions = json.load(codecs.open(u'./data/prepositions.json', u'r', u'utf-8'))
 complimentizers = json.load(codecs.open(u'./data/complimentizers.json', u'r', u'utf-8'))
@@ -44,7 +46,7 @@ class Text:
         self.sentence = False
         self.analysis = None
 
-    def pos_analyzer(self):
+    def mystem_analyzer(self):
         self.result = self.result.replace(u' ', u' ')
         self.analysis = m.analyze(self.result)
         position = 0
@@ -54,6 +56,23 @@ class Text:
             token[u'begin'] = position
             position += len(token[u'text'])
             token[u'end'] = position
+
+    def treetagger_analyzer(self):
+        self.result = self.result.replace(u' ', u' ')
+        self.analysis = t.tag_text(self.result, tagblanks=True)
+        position = 0
+        new_analysis = []
+        for token in self.analysis:
+            new_token = {u'begin': position}
+            if token[0] == u'<':
+                new_token[u'text'], new_token[u'gr'], new_token[u'lex'] = None, u'SPACE', None
+                position += 1
+            else:
+                new_token[u'text'], new_token[u'gr'], new_token[u'lex'] = token.split(u'\t')
+                position += len(new_token[u'text'])
+            new_token[u'end'] = position
+            new_analysis.append(new_token)
+        self.analysis = new_analysis
 
     def sentence_on(self):
         if not self.sentence:
@@ -170,28 +189,35 @@ class Text:
         i = 0
         # j = 0
 
-        write_name = self.path.replace(u'json', u'ann')
+        # write_name = self.path.replace(u'json', u'ann')
+        write_name = self.path.replace(u'txt', u'ann')
         w = codecs.open(write_name, u'w', u'utf-8')
 
-        for sent in self.sentences:
-            # for r in sent.relations:
-            #     j += 1
-            #     line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i)\
-            #            + u'\t' + u'\n'
-            #     w.write(line)
-            for span in sent.spans:
-                if span.embedded:
-                    i += 1
-                    line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                    w.write(line)
-                elif span.base:
-                    i += 1
-                    line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                    w.write(line)
-                elif span.inserted:
-                    i += 1
-                    line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                    w.write(line)
+        for token in self.analysis:
+            if token[u'gr'] != u'SPACE':
+                i += 1
+                line = u'T' + str(i) + u'\t' + u'Base ' + str(token[u'begin']) + u' ' + str(token[u'end']) + u'\t' + u'\n'
+                w.write(line)
+
+        # for sent in self.sentences:
+        #     # for r in sent.relations:
+        #     #     j += 1
+        #     #     line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i)\
+        #     #            + u'\t' + u'\n'
+        #     #     w.write(line)
+        #     for span in sent.spans:
+        #         if span.embedded:
+        #             i += 1
+        #             line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+        #             w.write(line)
+        #         elif span.base:
+        #             i += 1
+        #             line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+        #             w.write(line)
+        #         elif span.inserted:
+        #             i += 1
+        #             line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+        #             w.write(line)
 
         w.close()
 
