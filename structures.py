@@ -116,82 +116,66 @@ class Text:
             else:
                 self.sentences[-1].after_name = [False, 0]
             self.sentences[-1].after_name[1] += 1
-        if u'фам' in self.sentences[-1].tokens[-1].pos:
-            self.sentences[-1].after_name[0] = True
-        if u'сокр' in self.sentences[-1].tokens[-1].pos:
-            self.sentences[-1].after_abbreviation = True
+        if len(self.sentences[-1].tokens[-1].pos) > 1:
+            if self.sentences[-1].tokens[-1].pos[1] == u'p':
+                self.sentences[-1].after_name[0] = True
+        if self.sentences[-1].tokens[-1].pos == u'-':
+            if self.sentences[-1].tokens[-1].content[0].isalpha() and u'.' in self.sentences[-1].tokens[-1].content:
+                self.sentences[-1].after_abbreviation = True
         else:
             self.sentences[-1].after_abbreviation = False
 
     def add_punctuation(self, token, next_token):
-        if token[u'text'] == u' ':
-            self.sentences[-1].tokens[-1].pos = u'SPACE'
-        else:
-            if u',' in token[u'text'] or u'—' in token[u'text'] or u'(' in token[u'text'] or u')' in token[u'text']:
+        if token[u'gr'] == u',':
+            self.sentences[-1].tokens[-1].pos = u'COMMA'
+            if len(self.sentences[-1].tokens) > 1:
+                if self.sentences[-1].tokens[-2].content[-1].isdigit():
+                    if next_token is not None:
+                        if next_token[u'text'][0].isdigit():
+                            self.sentences[-1].tokens[-1].pos = u'pseudoCOMMA'
+        elif token[u'gr'] == u'-':
+            if token[u'lex'] in u'-:;—()':
                 self.sentences[-1].tokens[-1].pos = u'COMMA'
-                if len(self.sentences[-1].tokens) > 1:
-                    if self.sentences[-1].tokens[-2].content.isdigit():
-                        if next_token is not None:
-                            if next_token[u'text'].isdigit():
-                                self.sentences[-1].tokens[-1].pos = u'pseudoCOMMA'
-            elif u'.' in token[u'text'] or u'…' in token[u'text'] or u'?' in token[u'text'] or u'!' in token[u'text']:
-                self.sentences[-1].tokens[-1].pos = u'PERIOD'
-                if self.sentences[-1].after_abbreviation:
-                    self.sentences[-1].tokens[-1].after_abbreviation = True
-                if next_token is not None:
-                    if next_token[u'text'].istitle() or next_token[u'text'] == u'\"':
-                        self.sentences[-1].tokens[-1].next_token_title = True
-                        if u'analysis' in next_token:
-                            if next_token[u'analysis'] is not []:
-                                if u'фам' in next_token[u'analysis'][0][u'gr']:
-                                    self.sentences[-1].tokens[-1].next_token_name = True
-                                if u'сокр' in next_token[u'analysis'][0][u'gr']:
-                                    self.sentences[-1].tokens[-1].next_token_title = False
             else:
-                self.sentences[-1].tokens[-1].pos = u'MARK'
+                self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
+                self.sentences[-1].tokens[-1].lex = token[u'lex']
+        elif token[u'gr'] == u'SENT':
+            self.add_period(next_token)
 
-    def add_word(self, token):
-        if token[u'analysis']:
-            analysis = token[u'analysis'][0][u'gr'].split(u'=')
-            constant = analysis[0].split(u',')
-            self.sentences[-1].tokens[-1].pos = constant[0]
-            self.sentences[-1].tokens[-1].lex = token[u'analysis'][0][u'lex']
-            if len(analysis) > 1:
-                analysis[1] = analysis[1].replace(u'(', u'')
-                analysis[1] = analysis[1].replace(u')', u'')
-                self.sentences[-1].tokens[-1].inflection = copy.deepcopy(
-                        [x.split(u',') for x in analysis[1].split(u'|')])
-            if self.sentences[-1].tokens[-1].pos == u'S':
-                self.sentences[-1].tokens[-1].gender = constant[-2]
-                if constant[1] in u'мнед':
-                    for var in self.sentences[-1].tokens[-1].inflection:
-                        var.append(constant[1])
-            if self.sentences[-1].tokens[-1].pos == u'PR':
-                if token[u'analysis'][0][u'lex'] in prepositions:
-                    # print prepositions[token[u'analysis'][0][u'lex']][0]
-                    self.sentences[-1].tokens[-1].inflection = copy.deepcopy(
-                            prepositions[token[u'analysis'][0][u'lex']])
+    def add_period(self, next_token):
+        self.sentences[-1].tokens[-1].pos = u'PERIOD'
+        if self.sentences[-1].after_abbreviation:
+            self.sentences[-1].tokens[-1].after_abbreviation = True
+        if next_token is not None:
+            if next_token[u'text'].istitle() or next_token[u'text'] == u'\"':
+                self.sentences[-1].tokens[-1].next_token_title = True
+                if next_token[u'gr'][0] == u'N':
+                    if next_token[u'gr'][1] == u'p':
+                        self.sentences[-1].tokens[-1].next_token_name = True
+                elif next_token[u'gr'] == u'-':
+                    self.sentences[-1].tokens[-1].next_token_title = False
+
+    def add_word(self, token, next_token):
+        if token[u'gr'] == u'Afpmpaf':
+            if u'.' in token[u'text']:
+                if token[u'text'][:-1:].isdigit():
+                    self.sentences[-1].tokens[-1].pos = u'M'
+                    self.sentences[-1].tokens[-1].end -= 1
+                    self.sentences[-1].tokens.append(Token())
+                    self.sentences[-1].tokens[-1].begin = self.sentences[-1].tokens[-2].end
+                    self.sentences[-1].tokens[-1].end = self.sentences[-1].tokens[-1].begin + 1
+                self.add_period(next_token)
         else:
-            self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
+            self.sentences[-1].tokens[-1].pos = token[u'gr']
+            self.sentences[-1].tokens[-1].lex = token[u'lex']
 
     def add_token(self, token, next_token=None):
         self.sentences[-1].tokens.append(Token())
         self.sentences[-1].tokens[-1].begin = token[u'begin']
         self.sentences[-1].tokens[-1].end = token[u'end']
         self.sentences[-1].tokens[-1].content = token[u'text']
-        if u'analysis' in token:
-            self.add_word(token)
-        else:
-            self.add_punctuation(token, next_token)
-        self.after_name()
-
-    def add_tokenTT(self, token, next_token=None):
-        self.sentences[-1].tokens.append(Token())
-        self.sentences[-1].tokens[-1].begin = token[u'begin']
-        self.sentences[-1].tokens[-1].end = token[u'end']
-        self.sentences[-1].tokens[-1].content = token[u'text']
-        if u'analysis' in token:
-            self.add_word(token)
+        if token[u'gr'][0].isalpha() and token[u'gr'] != u'SENT':
+            self.add_word(token, next_token)
         else:
             self.add_punctuation(token, next_token)
         self.after_name()
@@ -200,35 +184,43 @@ class Text:
         i = 0
         # j = 0
 
-        # write_name = self.path.replace(u'json', u'ann')
-        write_name = self.path.replace(u'txt', u'ann')
+        write_name = self.path.replace(u'json', u'ann')
+        # write_name = self.path.replace(u'txt', u'ann')
         w = codecs.open(write_name, u'w', u'utf-8')
 
-        for token in self.analysis:
-            if token[u'gr'] != u'SPACE':
-                i += 1
-                line = u'T' + str(i) + u'\t' + u'Base ' + str(token[u'begin']) + u' ' + str(token[u'end']) + u'\t' + u'\n'
-                w.write(line)
+        # for token in self.analysis:
+        #     i += 1
+        #     line = u'T' + str(i) + u'\t' + u'Base ' + str(token[u'begin']) + u' ' + str(token[u'end']) + u'\t' + u'\n'
+        #     w.write(line)
 
-        # for sent in self.sentences:
-        #     # for r in sent.relations:
-        #     #     j += 1
-        #     #     line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i)\
-        #     #            + u'\t' + u'\n'
-        #     #     w.write(line)
-        #     for span in sent.spans:
-        #         if span.embedded:
-        #             i += 1
-        #             line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-        #             w.write(line)
-        #         elif span.base:
-        #             i += 1
-        #             line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-        #             w.write(line)
-        #         elif span.inserted:
-        #             i += 1
-        #             line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-        #             w.write(line)
+        # for sentence in self.sentences:
+        #     i += 1
+        #     line = u'T' + str(i) + u'\t' + u'Base ' + str(sentence.tokens[0].begin) + u' '\
+        #            + str(sentence.tokens[-1].end) + u'\t' + u'\n'
+        #     w.write(line)
+
+        for sentence in self.sentences:
+            # for r in sentence.relations:
+            #     j += 1
+            #     line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i)\
+            #            + u'\t' + u'\n'
+            #     w.write(line)
+            for span in sentence.spans:
+                i += 1
+                line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                w.write(line)
+                # if span.embedded:
+                #     i += 1
+                #     line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                #     w.write(line)
+                # elif span.base:
+                #     i += 1
+                #     line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                #     w.write(line)
+                # elif span.inserted:
+                #     i += 1
+                #     line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                #     w.write(line)
 
         w.close()
 
