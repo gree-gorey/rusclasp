@@ -12,8 +12,8 @@ newCorpus = Corpus(u'/home/gree-gorey/Corpus/')
 for text in newCorpus.texts(u'json'):
     text.sentence_splitter()
     for sentence in text.sentences:
-        for token in sentence.tokens:
-            print token.content, token.pos
+        # for token in sentence.tokens:
+        #     print token.content, token.pos
 
         # sent.find_pp()
         # sent.find_np()
@@ -21,10 +21,11 @@ for text in newCorpus.texts(u'json'):
 
         sentence.span_splitter()
 
-    #     for span in sentence.spans:
+        for span in sentence.spans:
+
     #         span.type_inserted()
     #
-    #         span.type()
+            span.type()
     #         span.clear_boundaries()
     #
     #     sentence.restore_embedded()

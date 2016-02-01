@@ -206,13 +206,13 @@ class Text:
             #            + u'\t' + u'\n'
             #     w.write(line)
             for span in sentence.spans:
-                i += 1
-                line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                w.write(line)
-                # if span.embedded:
-                #     i += 1
-                #     line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                #     w.write(line)
+                # i += 1
+                # line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                # w.write(line)
+                if span.embedded:
+                    i += 1
+                    line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                    w.write(line)
                 # elif span.base:
                 #     i += 1
                 #     line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
@@ -442,24 +442,31 @@ class Span:
                         return True
 
     def is_embedded(self):
-        if not self.inserted:
-            if self.tokens[0].lex in complimentizers:
-                self.embedded_type = u'complement'
-                return False
-            else:
-                for token in self.tokens:
-                    if token.lex == u'который':
-                        self.embedded_type = u'relative'
-                        return False
-                    else:
-                        for var in token.inflection:
-                            if u'деепр' in var:
-                                self.embedded_type = u'adverbial'
-                                return True
-            # for var in self.tokens[0].inflection:
-            #     if u'прич' in var and u'полн' in var:
-            #         self.embedded_type = u'participle'
-            #         return True
+        indicative = False
+        gerund = False
+        for token in self.tokens:
+            if len(token.pos) > 2:
+                if token.pos[0] == u'V':
+                    if token.pos[2] == u'g':
+                        gerund = True
+                    elif token.pos[2] == u'i':
+                        indicative = True
+        if gerund and not indicative:
+            return True
+        # if not self.inserted:
+        #     if self.tokens[0].lex in complimentizers:
+        #         self.embedded_type = u'complement'
+        #         return False
+        #     else:
+        #         for token in self.tokens:
+        #             if token.lex == u'который':
+        #                 self.embedded_type = u'relative'
+        #                 return False
+        #             else:
+        #                 for var in token.inflection:
+        #                     if u'деепр' in var:
+        #                         self.embedded_type = u'adverbial'
+        #                         return True
 
     def accept_embedded(self):
         if self.embedded_type == u'adverbial' or self.embedded_type == u'participle':
