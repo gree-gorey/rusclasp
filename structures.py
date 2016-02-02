@@ -134,8 +134,10 @@ class Text:
                         if next_token[u'text'][0].isdigit():
                             self.sentences[-1].tokens[-1].pos = u'pseudoCOMMA'
         elif token[u'gr'] == u'-':
-            if token[u'lex'] in u'-:;—()':
+            if token[u'lex'] in u'-:;—':
                 self.sentences[-1].tokens[-1].pos = u'COMMA'
+            elif token[u'lex'] in u'()':
+                self.sentences[-1].tokens[-1].pos = u'pairCOMMA'
             else:
                 self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
                 self.sentences[-1].tokens[-1].lex = token[u'lex']
@@ -165,6 +167,9 @@ class Text:
                     self.sentences[-1].tokens[-1].begin = self.sentences[-1].tokens[-2].end
                     self.sentences[-1].tokens[-1].end = self.sentences[-1].tokens[-1].begin + 1
                 self.add_period(next_token)
+            else:
+                self.sentences[-1].tokens[-1].pos = token[u'gr']
+                self.sentences[-1].tokens[-1].lex = token[u'lex']
         else:
             self.sentences[-1].tokens[-1].pos = token[u'gr']
             self.sentences[-1].tokens[-1].lex = token[u'lex']
@@ -205,10 +210,10 @@ class Text:
                 # line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                 # w.write(line)
                 if span.embedded:
-                    # if span.embedded_type == u'gerund':
-                    i += 1
-                    line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                    w.write(line)
+                    if span.embedded_type == u'gerund':
+                        i += 1
+                        line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                        w.write(line)
                 elif span.inserted:
                     i += 1
                     line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
@@ -278,6 +283,25 @@ class Sentence:
             elif token.content != u'\"':
                 self.span_on(token)
         self.span_off()
+
+    def eliminate_pair_comma(self):
+        predicate = False
+        begin = False
+        end = False
+        for i in xrange(len(self.tokens)):
+            if self.tokens[i].pos == u'pairCOMMA' and not begin:
+                left = i
+                begin = True
+                end = False
+            elif self.tokens[i].pos[0] == u'V' and begin:
+                predicate = True
+            elif self.tokens[i].pos == u'pairCOMMA' and begin:
+                right = i
+                end = True
+                begin = False
+                predicate = False
+            if begin and end and predicate:
+                self.tokens[left].pos = self.tokens[right].pos = u'COMMA'
 
     def restore_embedded(self):
         for j in xrange(len(self.spans)-1, -1, -1):

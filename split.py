@@ -13,11 +13,14 @@ for text in newCorpus.texts(u'json'):
     text.sentence_splitter()
     for sentence in text.sentences:
         # for token in sentence.tokens:
-        #     print token.content, token.pos
+        #     if len(token.pos) == 0:
+        #         print token.content
 
         # sent.find_pp()
         # sent.find_np()
         # sent.eliminate_and_disambiguate()
+
+        sentence.eliminate_pair_comma()
 
         sentence.span_splitter()
 
