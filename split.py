@@ -23,17 +23,21 @@ for text in newCorpus.texts(u'json'):
 
         for span in sentence.spans:
 
-    #         span.type_inserted()
+            span.type_inserted()
     #
             span.type()
+
+        sentence.split_embedded()
+
+            # print span.inserted
     #         span.clear_boundaries()
     #
     #     sentence.restore_embedded()
     #
     #     sentence.restore_base()
     #
-    #     for span in sentence.spans:
-    #         span.get_boundaries()
+        for span in sentence.spans:
+            span.get_boundaries()
 
     text.write_clause_ann()
 

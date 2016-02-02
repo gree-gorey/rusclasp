@@ -217,10 +217,10 @@ class Text:
                 #     i += 1
                 #     line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                 #     w.write(line)
-                # elif span.inserted:
-                #     i += 1
-                #     line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                #     w.write(line)
+                elif span.inserted:
+                    i += 1
+                    line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                    w.write(line)
 
         w.close()
 
@@ -256,15 +256,12 @@ class Sentence:
         if not self.span:
             self.span = True
             self.spans.append(Span())
-            self.spans[-1].begin = token.begin
 
     def span_off(self):
         if self.span:
             self.span = False
             self.spans[-1].tokens.pop()
-            if len(self.spans[-1].tokens) > 0:
-                self.spans[-1].end = self.spans[-1].tokens[-1].end
-            else:
+            if len(self.spans[-1].tokens) < 1:
                 self.spans.pop()
             # self.spans[-1].content = u''.join(self.spans[-1].tokens)
 
@@ -308,6 +305,31 @@ class Sentence:
                 #         else:
                 #             self.spans[j].tokens += self.spans[k].tokens
                 #             self.spans[k].in_base = True
+
+    def split_embedded(self):
+        add_span = False
+        for span in self.spans:
+            find_2nd_gerund = False
+            if span.embedded:
+                if span.gerund > 1:
+                    for i in xrange(len(span.tokens)-1, -1, -1):
+                        if len(span.tokens[i].pos) > 2:
+                            if span.tokens[i].pos[0] == u'V':
+                                if span.tokens[i].pos[2] == u'g':
+                                    print span.tokens[i].content
+                                    find_2nd_gerund = True
+                        elif span.tokens[i].lex == u'и':
+                            if find_2nd_gerund:
+                                if i > 0:
+                                    new_span = Span()
+                                    new_span.embedded = True
+                                    add_span = True
+                                    for j in xrange(i, len(span.tokens)):
+                                        new_span.tokens.append(span.tokens[j])
+                                    span.tokens = span.tokens[:i:]
+                                    break
+        if add_span:
+            self.spans.append(new_span)
 
     def find_np(self):
         match = -1
@@ -416,6 +438,8 @@ class Span:
         self.base = False
         self.in_base = False
         self.inserted = False
+        self.indicative = False
+        self.gerund = 0
 
     def type(self):
         if self.is_embedded():
@@ -428,31 +452,31 @@ class Span:
     def is_inserted(self):
         if len(self.tokens) < 10:
             if self.tokens[0].lex == u'по':
-                if len(self.tokens) > 4:
-                    if self.tokens[2].content == u'словам' or self.tokens[2].content ==\
-                            u'мнению' or self.tokens[4].content == u'словам':
+                if len(self.tokens) > 2:
+                    if self.tokens[1].content == u'словам' or self.tokens[1].content ==\
+                            u'мнению' or self.tokens[2].content == u'словам':
                         return True
             if self.tokens[0].content.lower() in inserted:
                 # print self.tokens[0].content.lower()
                 content = u''
                 for token in self.tokens:
                     content += token.content.lower()
+                    content += u' '
                 for var in inserted[self.tokens[0].content.lower()]:
-                    if var == content:
+                    if var == content[:-1:]:
                         return True
 
     def is_embedded(self):
-        indicative = False
-        gerund = False
-        for token in self.tokens:
-            if len(token.pos) > 2:
-                if token.pos[0] == u'V':
-                    if token.pos[2] == u'g':
-                        gerund = True
-                    elif token.pos[2] == u'i':
-                        indicative = True
-        if gerund and not indicative:
-            return True
+        if not self.inserted:
+            for token in self.tokens:
+                if len(token.pos) > 2:
+                    if token.pos[0] == u'V':
+                        if token.pos[2] == u'g':
+                            self.gerund += 1
+                        elif token.pos[2] == u'i':
+                            self.indicative = True
+            if self.gerund > 0 and not self.indicative:
+                return True
         # if not self.inserted:
         #     if self.tokens[0].lex in complimentizers:
         #         self.embedded_type = u'complement'
@@ -502,14 +526,12 @@ class Span:
                 return True
 
     def get_boundaries(self):
-        if self.embedded or self.base:
-            self.begin = self.tokens[0].begin
-            self.end = self.tokens[-1].end
+        self.begin = self.tokens[0].begin
+        self.end = self.tokens[-1].end
 
     def clear_boundaries(self):
         if self.tokens[0].content == u'\"':
             self.tokens.remove(self.tokens[0])
-            self.begin = self.tokens[0].begin
 
 
 def write_brat_ann(path):  # text, path):
