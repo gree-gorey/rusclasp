@@ -182,7 +182,7 @@ class Text:
 
     def write_clause_ann(self):
         i = 0
-        # j = 0
+        j = 0
 
         write_name = self.path.replace(u'json', u'ann')
         # write_name = self.path.replace(u'txt', u'ann')
@@ -200,27 +200,30 @@ class Text:
         #     w.write(line)
 
         for sentence in self.sentences:
-            # for r in sentence.relations:
-            #     j += 1
-            #     line = u'R' + str(j) + u'\t' + u'SplitSpan Arg1:T' + str(r[0]+i) + u' Arg2:T' + str(r[1]+i)\
-            #            + u'\t' + u'\n'
-            #     w.write(line)
             for span in sentence.spans:
                 # i += 1
                 # line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                 # w.write(line)
                 if span.embedded:
+                    # if span.embedded_type == u'gerund':
                     i += 1
                     line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                     w.write(line)
-                # elif span.base:
-                #     i += 1
-                #     line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                #     w.write(line)
                 elif span.inserted:
                     i += 1
                     line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                     w.write(line)
+                # elif span.base:
+                # elif not span.in_embedded:
+                #     i += 1
+                #     line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                #     w.write(line)
+                span.entity_number = i
+            for r in sentence.relations:
+                j += 1
+                line = u'R' + str(j) + u'\t' + u'Split Arg1:T' + str(sentence.spans[r[0]].entity_number) +\
+                       u' Arg2:T' + str(sentence.spans[r[1]].entity_number) + u'\t' + u'\n'
+                w.write(line)
 
         w.close()
 
@@ -282,9 +285,11 @@ class Sentence:
                 last_added = j
                 for k in xrange(j+1, len(self.spans)):
                     if not self.spans[k].embedded and not self.spans[k].in_embedded and not self.spans[k].inserted:
-                        if self.spans[k].accept_embedded():
-                            if k != last_added+1:
+                        # print self.spans[k].tokens[0].content
+                        if self.spans[k].accept_embedded(self.spans[j]):
+                            if k != last_added + 1:
                                 self.spans[k].embedded = True
+                                self.spans[k].embedded_type = self.spans[j].embedded_type
                                 self.relations.append((j, k))
                             else:
                                 self.spans[j].tokens += self.spans[k].tokens
@@ -307,29 +312,30 @@ class Sentence:
                 #             self.spans[k].in_base = True
 
     def split_embedded(self):
-        add_span = False
+        new_spans = []
         for span in self.spans:
+            new_spans.append(span)
             find_2nd_gerund = False
             if span.embedded:
-                if span.gerund > 1:
-                    for i in xrange(len(span.tokens)-1, -1, -1):
-                        if len(span.tokens[i].pos) > 2:
-                            if span.tokens[i].pos[0] == u'V':
-                                if span.tokens[i].pos[2] == u'g':
-                                    print span.tokens[i].content
-                                    find_2nd_gerund = True
-                        elif span.tokens[i].lex == u'и':
-                            if find_2nd_gerund:
-                                if i > 0:
-                                    new_span = Span()
-                                    new_span.embedded = True
-                                    add_span = True
-                                    for j in xrange(i, len(span.tokens)):
-                                        new_span.tokens.append(span.tokens[j])
-                                    span.tokens = span.tokens[:i:]
-                                    break
-        if add_span:
-            self.spans.append(new_span)
+                if span.embedded_type == u'gerund':
+                    if span.gerund > 1:
+                        for i in xrange(len(span.tokens)-1, -1, -1):
+                            if len(span.tokens[i].pos) > 2:
+                                if span.tokens[i].pos[0] == u'V':
+                                    if span.tokens[i].pos[2] == u'g':
+                                        find_2nd_gerund = True
+                            elif span.tokens[i].lex == u'и':
+                                if find_2nd_gerund:
+                                    if i > 0:
+                                        new_span = Span()
+                                        new_span.embedded = True
+                                        new_span.embedded_type = u'gerund'
+                                        for j in xrange(i, len(span.tokens)):
+                                            new_span.tokens.append(span.tokens[j])
+                                        new_spans[-1].tokens = span.tokens[:i:]
+                                        new_spans.append(new_span)
+                                        break
+        self.spans = copy.deepcopy(new_spans)
 
     def find_np(self):
         match = -1
@@ -384,49 +390,6 @@ class Sentence:
                         token.inflection = new_inflection
 
 
-class Token:
-    def __init__(self):
-        self.content = u''
-        self.lex = u''
-        self.pos = u''
-        self.inflection = []
-        self.gender = u''
-        self.begin = 0
-        self.end = 0
-        self.after_name = False
-        self.after_abbreviation = False
-        self.next_token_title = False
-        self.next_token_name = False
-        self.in_pp = False
-        self.in_np = False
-
-    def end_of_span(self):
-        return self.pos == u'COMMA'
-
-    def agree_adj_noun(self, other):
-        for varI in self.inflection:
-            if other.gender in varI or u'мн' in varI:
-                for varJ in other.inflection:
-                    try:
-                        if varJ[0] in varI and varJ[1] in varI:
-                            return True
-                    except:
-                        print varJ[0], other.content
-
-    def agree_pr_noun(self, other):
-        for var in other.inflection:
-            if var[0] in self.inflection:
-                return True
-
-    def is_adj(self):
-        if self.pos == u'A':
-            return True
-        elif self.pos == u'V':
-            for var in self.inflection:
-                if u'прич' in var:
-                    return True
-
-
 class Span:
     def __init__(self):
         self.tokens = []
@@ -468,7 +431,14 @@ class Span:
 
     def is_embedded(self):
         if not self.inserted:
+            if self.tokens[0].pos == u'C':
+                if self.tokens[0].lex in complimentizers:
+                    self.embedded_type = u'complement'
+                    return True
             for token in self.tokens:
+                if token.lex == u'который':
+                    self.embedded_type = u'relative'
+                    return True
                 if len(token.pos) > 2:
                     if token.pos[0] == u'V':
                         if token.pos[2] == u'g':
@@ -476,38 +446,26 @@ class Span:
                         elif token.pos[2] == u'i':
                             self.indicative = True
             if self.gerund > 0 and not self.indicative:
+                self.embedded_type = u'gerund'
                 return True
-        # if not self.inserted:
-        #     if self.tokens[0].lex in complimentizers:
-        #         self.embedded_type = u'complement'
-        #         return False
-        #     else:
-        #         for token in self.tokens:
-        #             if token.lex == u'который':
-        #                 self.embedded_type = u'relative'
-        #                 return False
-        #             else:
-        #                 for var in token.inflection:
-        #                     if u'деепр' in var:
-        #                         self.embedded_type = u'adverbial'
-        #                         return True
 
-    def accept_embedded(self):
-        if self.embedded_type == u'adverbial' or self.embedded_type == u'participle':
+    def accept_embedded(self, other):
+        if other.embedded_type == u'gerund':  # or self.embedded_type == u'participle':
+            # print 0
             return self.infinite()
-        elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
-            return self.finite()
+        # elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
+        #     return self.finite()
 
     def infinite(self):
         for token in self.tokens:
-            if token.pos == u'V':
-                for var in token.inflection:
-                    if u'инф' not in var and u'прич' not in var:
+            if len(token.pos) > 2:
+                if token.pos[0] == u'V':
+                    if token.pos[2] in u'imc':
                         return False
-            elif token.pos == u'S':
-                for var in token.inflection:
-                    if u'им' in var:
+                elif token.pos[0] == u'N':
+                    if token.pos[4] == u'n':
                         return False
+        return True
 
     def finite(self):
         for token in self.tokens:
@@ -526,12 +484,53 @@ class Span:
                 return True
 
     def get_boundaries(self):
+        if self.tokens[0].content == u'\"':
+            self.tokens.remove(self.tokens[0])
         self.begin = self.tokens[0].begin
         self.end = self.tokens[-1].end
 
-    def clear_boundaries(self):
-        if self.tokens[0].content == u'\"':
-            self.tokens.remove(self.tokens[0])
+
+class Token:
+    def __init__(self):
+        self.content = u''
+        self.lex = u''
+        self.pos = u''
+        self.inflection = []
+        self.gender = u''
+        self.begin = 0
+        self.end = 0
+        self.after_name = False
+        self.after_abbreviation = False
+        self.next_token_title = False
+        self.next_token_name = False
+        self.in_pp = False
+        self.in_np = False
+
+    def end_of_span(self):
+        return self.pos == u'COMMA'
+
+    def agree_adj_noun(self, other):
+        for varI in self.inflection:
+            if other.gender in varI or u'мн' in varI:
+                for varJ in other.inflection:
+                    try:
+                        if varJ[0] in varI and varJ[1] in varI:
+                            return True
+                    except:
+                        print varJ[0], other.content
+
+    def agree_pr_noun(self, other):
+        for var in other.inflection:
+            if var[0] in self.inflection:
+                return True
+
+    def is_adj(self):
+        if self.pos == u'A':
+            return True
+        elif self.pos == u'V':
+            for var in self.inflection:
+                if u'прич' in var:
+                    return True
 
 
 def write_brat_ann(path):  # text, path):

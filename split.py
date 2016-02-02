@@ -24,18 +24,12 @@ for text in newCorpus.texts(u'json'):
         for span in sentence.spans:
 
             span.type_inserted()
-    #
             span.type()
 
         sentence.split_embedded()
 
-            # print span.inserted
-    #         span.clear_boundaries()
-    #
-    #     sentence.restore_embedded()
-    #
-    #     sentence.restore_base()
-    #
+        sentence.restore_embedded()
+
         for span in sentence.spans:
             span.get_boundaries()
 
