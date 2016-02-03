@@ -215,10 +215,10 @@ class Text:
                 # line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                 # w.write(line)
                 if span.embedded:
-                    if span.embedded_type == u'gerund':
-                        i += 1
-                        line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                        w.write(line)
+                    # if span.embedded_type == u'gerund':
+                    i += 1
+                    line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                    w.write(line)
                 elif span.inserted:
                     i += 1
                     line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
@@ -312,14 +312,21 @@ class Sentence:
         for j in xrange(len(self.spans)-1, -1, -1):
             if self.spans[j].embedded:
                 last_added = j
+                last_connected = j
                 for k in xrange(j+1, len(self.spans)):
                     if not self.spans[k].embedded and not self.spans[k].in_embedded and not self.spans[k].inserted:
                         # print self.spans[k].tokens[0].content
                         if self.spans[k].accept_embedded(self.spans[j]):
                             if k != last_added + 1:
-                                self.spans[k].embedded = True
-                                self.spans[k].embedded_type = self.spans[j].embedded_type
-                                self.relations.append((j, k))
+                                if k != last_connected + 1:
+                                    self.spans[k].embedded = True
+                                    self.spans[k].embedded_type = self.spans[j].embedded_type
+                                    self.relations.append((last_connected, k))
+                                    last_connected = k
+                                else:
+                                    self.spans[last_connected].tokens += self.spans[k].tokens
+                                    self.spans[k].in_embedded = True
+                                    last_added = k
                             else:
                                 self.spans[j].tokens += self.spans[k].tokens
                                 self.spans[k].in_embedded = True
@@ -428,6 +435,7 @@ class Span:
         self.inserted = False
         self.indicative = False
         self.gerund = 0
+        # self.finite = False
 
     def type(self):
         if self.is_embedded():
@@ -478,8 +486,8 @@ class Span:
         if other.embedded_type == u'gerund':  # or self.embedded_type == u'participle':
             # print 0
             return self.infinite()
-        # elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
-        #     return self.finite()
+        elif other.embedded_type == u'relative' or other.embedded_type == u'complement':
+            return not(self.finite() and other.finite())
 
     def infinite(self):
         for token in self.tokens:
@@ -494,14 +502,10 @@ class Span:
 
     def finite(self):
         for token in self.tokens:
-            if token.pos == u'V':
-                for var in token.inflection:
-                    if u'инф' not in var and u'прич' not in var:
-                        return False
-            elif token.pos == u'S':
-                for var in token.inflection:
-                    if u'им' in var:
-                        return False
+            if len(token.pos) > 2:
+                if token.pos[0] == u'V':
+                    if token.pos[2] in u'imc':
+                        return True
 
     def accept_base(self):
         for token in self.tokens:
