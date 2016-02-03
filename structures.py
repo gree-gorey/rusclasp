@@ -95,6 +95,7 @@ class Text:
     def end_of_sentence(self):
         if self.sentences[-1].tokens[-1].pos == u'PERIOD':  # if it is a period
             if self.sentences[-1].tokens[-1].next_token_title:  # if the next token is uppercase
+                # print 1
                 if self.sentences[-1].tokens[-1].after_abbreviation:  # if the previous one is abbreviation
                     if self.sentences[-1].tokens[-1].next_token_name:  # if the next one in a name
                         if self.sentences[-1].tokens[-1].after_name:  # if one of the previous five tokens is a name
@@ -154,22 +155,18 @@ class Text:
                 if next_token[u'gr'][0] == u'N':
                     if next_token[u'gr'][1] == u'p':
                         self.sentences[-1].tokens[-1].next_token_name = True
-                elif next_token[u'gr'] == u'-':
-                    self.sentences[-1].tokens[-1].next_token_title = False
+                # elif next_token[u'gr'] == u'-':
+                #     self.sentences[-1].tokens[-1].next_token_title = False
 
     def add_word(self, token, next_token):
-        if token[u'gr'] == u'Afpmpaf':
-            if u'.' in token[u'text']:
-                if token[u'text'][:-1:].isdigit():
-                    self.sentences[-1].tokens[-1].pos = u'M'
-                    self.sentences[-1].tokens[-1].end -= 1
-                    self.sentences[-1].tokens.append(Token())
-                    self.sentences[-1].tokens[-1].begin = self.sentences[-1].tokens[-2].end
-                    self.sentences[-1].tokens[-1].end = self.sentences[-1].tokens[-1].begin + 1
-                self.add_period(next_token)
-            else:
-                self.sentences[-1].tokens[-1].pos = token[u'gr']
-                self.sentences[-1].tokens[-1].lex = token[u'lex']
+        if u'.' in token[u'text']:
+            if token[u'text'][:-1:].isdigit():
+                self.sentences[-1].tokens[-1].pos = u'M'
+                self.sentences[-1].tokens[-1].end -= 1
+                self.sentences[-1].tokens.append(Token())
+                self.sentences[-1].tokens[-1].begin = self.sentences[-1].tokens[-2].end
+                self.sentences[-1].tokens[-1].end = self.sentences[-1].tokens[-1].begin + 1
+            self.add_period(next_token)
         else:
             self.sentences[-1].tokens[-1].pos = token[u'gr']
             self.sentences[-1].tokens[-1].lex = token[u'lex']
