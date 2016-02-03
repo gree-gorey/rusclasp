@@ -16,9 +16,8 @@ for text in newCorpus.texts(u'json'):
         #     if len(token.pos) == 0:
         #         print token.content
 
-        # sent.find_pp()
+        sentence.find_pp()
         # sent.find_np()
-        # sent.eliminate_and_disambiguate()
 
         sentence.eliminate_pair_comma()
 

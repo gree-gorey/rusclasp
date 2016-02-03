@@ -205,6 +205,11 @@ class Text:
         #     w.write(line)
 
         for sentence in self.sentences:
+            # for pair in sentence.pp:
+            #     # print sentence.tokens[pair[0]].begin, sentence.tokens[pair[1]].end
+            #     i += 1
+            #     line = u'T' + str(i) + u'\t' + u'Base ' + str(sentence.tokens[pair[0]].begin) + u' ' + str(sentence.tokens[pair[1]].end) + u'\t' + u'\n'
+            #     w.write(line)
             for span in sentence.spans:
                 # i += 1
                 # line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
@@ -384,34 +389,30 @@ class Sentence:
 
     def find_pp(self):
         for i in xrange(len(self.tokens)-1, -1, -1):
-            if self.tokens[i].pos == u'PR':
+            if self.tokens[i].pos[0] == u'S':
                 # print self.tokens[i].content
                 for j in xrange(i+1, len(self.tokens)):
                     # print self.tokens[j].content
                     if not self.tokens[j].in_pp:
-                        self.tokens[j].in_pp = True
-                        if self.tokens[j].pos == u'S':
+                        if self.tokens[j].pos[0] in u'NP':
                             if self.tokens[i].agree_pr_noun(self.tokens[j]):
                                 self.pp.append([i, j])
-                                # print self.tokens[j].content
+                                for token in self.tokens[i: j+1]:
+                                    token.in_pp = True
+                                    if token.pos == u'COMMA':
+                                        token.pos = u'pseudoCOMMA'
                                 break
+                                # print self.tokens[j].content
+
+        # for pair in self.pp:
+        #     print self.tokens[pair[0]].content, self.tokens[pair[1]].content
 
     def eliminate_and_disambiguate(self):
-        for pair in self.np:
-            for token in self.tokens[pair[0]+1: pair[1]]:
-                if token.pos == u'COMMA':
-                    token.pos = u'pseudoCOMMA'
-        for pair in self.pp:
-            for token in self.tokens[pair[0]+1: pair[1]]:
-                if token.pos == u'COMMA':
-                    token.pos = u'pseudoCOMMA'
-                elif token.pos == u'S':
-                    if len(token.inflection) > 1:
-                        new_inflection = []
-                        for var in token.inflection:
-                            if u'им' not in var:
-                                new_inflection.append(var)
-                        token.inflection = new_inflection
+        pass
+        # for pair in self.np:
+        #     for token in self.tokens[pair[0]+1: pair[1]]:
+        #         if token.pos == u'COMMA':
+        #             token.pos = u'pseudoCOMMA'
 
 
 class Span:
@@ -543,9 +544,12 @@ class Token:
                     except:
                         print varJ[0], other.content
 
-    def agree_pr_noun(self, other):
-        for var in other.inflection:
-            if var[0] in self.inflection:
+    def agree_pr_noun(self, noun):
+        if noun.pos[0] == u'N':
+            if self.pos[3] == noun.pos[4]:
+                return True
+        else:
+            if self.pos[3] == noun.pos[5]:
                 return True
 
     def is_adj(self):
