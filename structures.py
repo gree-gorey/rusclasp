@@ -240,6 +240,11 @@ class Text:
         json.dump(self.analysis, w, ensure_ascii=False, indent=2)
         w.close()
 
+    def rewrite(self):
+        w = codecs.open(self.path, u'w', u'utf-8')
+        w.write(self.result)
+        w.close()
+
 
 class Sentence:
     def __init__(self):
@@ -255,9 +260,8 @@ class Sentence:
 
     def contain_structure(self):
         for token in self.tokens:
-            for var in token.inflection:
-                if u'деепр' in var:
-                    return True
+            if token.lex == u'который':
+                return True
 
     def add_token(self, token):
         self.spans[-1].tokens.append(token)
