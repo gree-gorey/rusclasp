@@ -38,7 +38,6 @@ for text in newCorpus.texts(u'json'):
 
     text.write_clause_ann()
 
-
 t2 = time.time()
 
 print t2 - t1
