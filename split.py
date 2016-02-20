@@ -18,7 +18,6 @@ for text in newCorpus.texts(u'json'):
     #         print token.content, token.pos
 
         sentence.find_pp()
-        # sent.find_np()
 
         sentence.eliminate_pair_comma()
 
@@ -26,11 +25,13 @@ for text in newCorpus.texts(u'json'):
 
         for span in sentence.spans:
 
-            span.type_inserted()
+            # decide whether span is inserted or embedded or neither
             span.type()
 
+        # split embedded span if it contains > 1 predicate
         sentence.split_embedded()
 
+        # walk through spans and join whenever possible
         sentence.restore_embedded()
 
         for span in sentence.spans:

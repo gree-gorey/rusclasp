@@ -67,7 +67,7 @@ class Text:
                 # new_token[u'text'], new_token[u'gr'], new_token[u'lex'] = None, u'SPACE', None
                 position += 1
             else:
-                new_token = {u'begin': position}
+                new_token = dict(begin=position)
                 new_token[u'text'], new_token[u'gr'], new_token[u'lex'] = token.split(u'\t')
                 position += len(new_token[u'text'])
                 new_token[u'end'] = position
@@ -84,10 +84,9 @@ class Text:
             self.sentence = False
 
     def sentence_splitter(self):
-        for i in xrange(len(self.result)):
+        for i, result in enumerate(self.result):
             self.sentence_on()
-            self.add_token(self.result[i]) if i == len(self.result)-1 else self.add_token(self.result[i],
-                                                                                            self.result[i+1])
+            self.add_token(result) if i == len(self.result)-1 else self.add_token(result, self.result[i+1])
             if self.end_of_sentence():
                 self.sentence_off()
         self.sentence_off()
@@ -266,7 +265,7 @@ class Sentence:
     def add_token(self, token):
         self.spans[-1].tokens.append(token)
 
-    def span_on(self, token):
+    def span_on(self):
         if not self.span:
             self.span = True
             self.spans.append(Span())
@@ -277,31 +276,30 @@ class Sentence:
             self.spans[-1].tokens.pop()
             if len(self.spans[-1].tokens) < 1:
                 self.spans.pop()
-            # self.spans[-1].content = u''.join(self.spans[-1].tokens)
 
     def span_splitter(self):
         for token in self.tokens:
             if token.content != u'\"':
-                self.span_on(token)
+                self.span_on()
                 self.add_token(token)
             if token.end_of_span():
                 self.span_off()
             elif token.content != u'\"':
-                self.span_on(token)
+                self.span_on()
         self.span_off()
 
     def eliminate_pair_comma(self):
         predicate = False
         begin = False
         end = False
-        for i in xrange(len(self.tokens)):
-            if self.tokens[i].pos == u'pairCOMMA' and not begin:
+        for i, token in enumerate(self.tokens):
+            if token.pos == u'pairCOMMA' and not begin:
                 left = i
                 begin = True
                 end = False
-            elif self.tokens[i].pos[0] == u'V' and begin:
+            elif token.pos[0] == u'V' and begin:
                 predicate = True
-            elif self.tokens[i].pos == u'pairCOMMA' and begin:
+            elif token.pos == u'pairCOMMA' and begin:
                 right = i
                 end = True
                 begin = False
@@ -310,43 +308,34 @@ class Sentence:
                 self.tokens[left].pos = self.tokens[right].pos = u'COMMA'
 
     def restore_embedded(self):
-        for j in xrange(len(self.spans)-1, -1, -1):
-            if self.spans[j].embedded:
-                last_added = j
-                last_connected = j
-                for k in xrange(j+1, len(self.spans)):
-                    if not self.spans[k].embedded and not self.spans[k].in_embedded and not self.spans[k].inserted:
-                        # print self.spans[k].tokens[0].content
-                        if self.spans[k].accept_embedded(self.spans[j]):
-                            if k != last_added + 1:
-                                if k != last_connected + 1:
-                                    self.spans[k].embedded = True
-                                    self.spans[k].embedded_type = self.spans[j].embedded_type
-                                    self.relations.append((last_connected, k))
-                                    last_connected = k
+        for i, span in enumerate(reversed(self.spans)):
+            if span.embedded:
+                last_added = i
+                last_connected = i
+                for j, following_span in enumerate(self.spans[i+1::]):
+                    if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
+                        if following_span.accept_embedded(span):
+                            if j != last_added + 1:
+                                if j != last_connected + 1:
+                                    following_span.embedded = True
+                                    following_span.embedded_type = span.embedded_type
+                                    self.relations.append((last_connected, j))
+                                    last_connected = j
                                 else:
-                                    self.spans[last_connected].tokens += self.spans[k].tokens
-                                    self.spans[k].in_embedded = True
-                                    last_added = k
+                                    self.spans[last_connected].tokens += following_span.tokens
+                                    following_span.in_embedded = True
+                                    last_added = j
                             else:
-                                self.spans[j].tokens += self.spans[k].tokens
-                                self.spans[k].in_embedded = True
-                                last_added = k
+                                span.tokens += following_span.tokens
+                                following_span.in_embedded = True
+                                last_added = j
                         else:
                             break
 
     def restore_base(self):
-        for j in xrange(len(self.spans)):
-            if not self.spans[j].embedded and not self.spans[j].in_embedded and not self.spans[j].in_base and not self.spans[j].inserted:
-                self.spans[j].base = True
-                # for k in xrange(j+1, len(self.spans)):
-                #     if self.spans[k].accept_base():
-                #         if k != j+1:
-                #             self.spans[k].base = True
-                #             self.relations.append((j, k))
-                #         else:
-                #             self.spans[j].tokens += self.spans[k].tokens
-                #             self.spans[k].in_base = True
+        for i, span in enumerate(self.spans):
+            if not span.embedded and not span.in_embedded and not span.in_base and not span.inserted:
+                span.base = True
 
     def split_embedded(self):
         new_spans = []
@@ -356,19 +345,19 @@ class Sentence:
             if span.embedded:
                 if span.embedded_type == u'gerund':
                     if span.gerund > 1:
-                        for i in xrange(len(span.tokens)-1, -1, -1):
-                            if len(span.tokens[i].pos) > 2:
-                                if span.tokens[i].pos[0] == u'V':
-                                    if span.tokens[i].pos[2] == u'g':
+                        for i, token in enumerate(reversed(span.tokens)):
+                            if len(token.pos) > 2:
+                                if token.pos[0] == u'V':
+                                    if token.pos[2] == u'g':
                                         find_2nd_gerund = True
-                            elif span.tokens[i].lex == u'и':
+                            elif token.lex == u'и':
                                 if find_2nd_gerund:
                                     if i > 0:
                                         new_span = Span()
                                         new_span.embedded = True
                                         new_span.embedded_type = u'gerund'
-                                        for j in xrange(i, len(span.tokens)):
-                                            new_span.tokens.append(span.tokens[j])
+                                        for j, following_token in enumerate(span.tokens[i::]):
+                                            new_span.tokens.append(following_token)
                                         new_spans[-1].tokens = span.tokens[:i:]
                                         new_spans.append(new_span)
                                         break
@@ -376,18 +365,18 @@ class Sentence:
 
     def find_np(self):
         match = -1
-        for i in xrange(len(self.tokens)):
+        for i, token in enumerate(self.tokens):
             if i > match:
-                if not self.tokens[i].in_pp:
-                    if self.tokens[i].is_adj():
+                if not token.in_pp:
+                    if token.is_adj():
                         # print self.tokens[i].content
-                        for j in xrange(i+1, len(self.tokens)):
+                        for j, following_token in enumerate(self.tokens[i+1::]):
                             # print self.tokens[j].content
-                            if not self.tokens[j].in_pp:
-                                if not self.tokens[j].in_np:
+                            if not following_token.in_pp:
+                                if not following_token.in_np:
                                     # self.tokens[j].in_pp = True
-                                    if self.tokens[j].pos == u'S':
-                                        if self.tokens[i].agree_adj_noun(self.tokens[j]):
+                                    if following_token.pos == u'S':
+                                        if token.agree_adj_noun(following_token):
                                             self.np.append([i, j])
                                             # print self.tokens[j].content
                                             for k in xrange(i, j+1):
@@ -396,24 +385,20 @@ class Sentence:
                                             break
 
     def find_pp(self):
-        for i in xrange(len(self.tokens)-1, -1, -1):
-            if self.tokens[i].pos[0] == u'S':
+        for i, token in enumerate(reversed(self.tokens)):
+            if token.pos[0] == u'S':
                 # print self.tokens[i].content
-                for j in xrange(i+1, len(self.tokens)):
+                for j, following_token in enumerate(self.tokens[i+1::]):
                     # print self.tokens[j].content
-                    if not self.tokens[j].in_pp:
-                        if self.tokens[j].pos[0] in u'NP':
-                            if self.tokens[i].agree_pr_noun(self.tokens[j]):
+                    if not following_token.in_pp:
+                        if following_token.pos[0] in u'NP':
+                            if token.agree_pr_noun(following_token):
                                 self.pp.append([i, j])
-                                for token in self.tokens[i: j+1]:
-                                    token.in_pp = True
-                                    if token.pos == u'COMMA':
-                                        token.pos = u'pseudoCOMMA'
+                                for inner_token in self.tokens[i: j+1]:
+                                    inner_token.in_pp = True
+                                    if inner_token.pos == u'COMMA':
+                                        inner_token.pos = u'pseudoCOMMA'
                                 break
-                                # print self.tokens[j].content
-
-        # for pair in self.pp:
-        #     print self.tokens[pair[0]].content, self.tokens[pair[1]].content
 
     def eliminate_and_disambiguate(self):
         pass
@@ -439,12 +424,10 @@ class Span:
         # self.finite = False
 
     def type(self):
-        if self.is_embedded():
-            self.embedded = True
-
-    def type_inserted(self):
         if self.is_inserted():
             self.inserted = True
+        if self.is_embedded():
+            self.embedded = True
 
     def is_inserted(self):
         if len(self.tokens) < 10:
