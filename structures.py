@@ -308,11 +308,11 @@ class Sentence:
                 self.tokens[left].pos = self.tokens[right].pos = u'COMMA'
 
     def restore_embedded(self):
-        for i, span in enumerate(reversed(self.spans)):
+        for i, span in reversed(list(enumerate(self.spans))):
             if span.embedded:
                 last_added = i
                 last_connected = i
-                for j, following_span in enumerate(self.spans[i+1::]):
+                for j, following_span in enumerate(self.spans[i+1::], start=i+1):
                     if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
                         if following_span.accept_embedded(span):
                             if j != last_added + 1:
@@ -345,7 +345,7 @@ class Sentence:
             if span.embedded:
                 if span.embedded_type == u'gerund':
                     if span.gerund > 1:
-                        for i, token in enumerate(reversed(span.tokens)):
+                        for i, token in reversed(list(enumerate(span.tokens))):
                             if len(token.pos) > 2:
                                 if token.pos[0] == u'V':
                                     if token.pos[2] == u'g':
@@ -356,7 +356,7 @@ class Sentence:
                                         new_span = Span()
                                         new_span.embedded = True
                                         new_span.embedded_type = u'gerund'
-                                        for j, following_token in enumerate(span.tokens[i::]):
+                                        for following_token in span.tokens[i::]:
                                             new_span.tokens.append(following_token)
                                         new_spans[-1].tokens = span.tokens[:i:]
                                         new_spans.append(new_span)
@@ -370,7 +370,7 @@ class Sentence:
                 if not token.in_pp:
                     if token.is_adj():
                         # print self.tokens[i].content
-                        for j, following_token in enumerate(self.tokens[i+1::]):
+                        for j, following_token in enumerate(self.tokens[i+1::], start=i+1):
                             # print self.tokens[j].content
                             if not following_token.in_pp:
                                 if not following_token.in_np:
@@ -385,14 +385,15 @@ class Sentence:
                                             break
 
     def find_pp(self):
-        for i, token in enumerate(reversed(self.tokens)):
+        for i, token in reversed(list(enumerate(self.tokens))):
             if token.pos[0] == u'S':
-                # print self.tokens[i].content
-                for j, following_token in enumerate(self.tokens[i+1::]):
-                    # print self.tokens[j].content
+                # print token.content, u'\n'
+                for j, following_token in enumerate(self.tokens[i+1::], start=i+1):
+                    # print following_token.content, 555
                     if not following_token.in_pp:
                         if following_token.pos[0] in u'NP':
                             if token.agree_pr_noun(following_token):
+                                # print following_token.content
                                 self.pp.append([i, j])
                                 for inner_token in self.tokens[i: j+1]:
                                     inner_token.in_pp = True

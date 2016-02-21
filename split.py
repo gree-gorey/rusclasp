@@ -14,8 +14,8 @@ for text in newCorpus.texts(u'json'):
     # print len(text.sentences)
     for sentence in text.sentences:
 
-    #     for token in sentence.tokens:
-    #         print token.content, token.pos
+        # for token in sentence.tokens:
+        #     print token.content, token.pos
 
         sentence.find_pp()
 
@@ -27,6 +27,7 @@ for text in newCorpus.texts(u'json'):
 
             # decide whether span is inserted or embedded or neither
             span.type()
+            # print span.tokens[0].content, span.embedded_type
 
         # split embedded span if it contains > 1 predicate
         sentence.split_embedded()
