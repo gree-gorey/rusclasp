@@ -489,6 +489,10 @@ class Span:
                 if self.tokens[0].lex in complimentizers:
                     self.embedded_type = u'complement'
                     return True
+            elif re.match(u'V.p.......', self.tokens[0].pos):
+                if not self.finite():
+                    self.embedded_type = u'participle'
+                    return True
             for token in self.tokens:
                 if token.lex == u'который':
                     self.embedded_type = u'relative'
@@ -505,8 +509,8 @@ class Span:
 
     def accept_embedded(self, other):
         if self.inside_quotes is other.inside_quotes:
-            if self.embedded_type == u'gerund':  # or self.embedded_type == u'participle':
-                return other.infinite()
+            if self.embedded_type == u'gerund' or self.embedded_type == u'participle':
+                return not other.finite() and not other.nominative()
             elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
                 if not(self.finite() and other.finite()):
                     return not other.begin_with_and()
@@ -518,29 +522,20 @@ class Span:
     def begin_with_and(self):
         return self.tokens[0].lex == u'и'
 
-    def infinite(self):
+    def nominative(self):
         for token in self.shared_tokens:
-            if len(token.pos) > 2:
-                if token.pos[0] == u'V':
-                    if token.pos[2] in u'imc':
-                        return False
-                elif token.pos[0] == u'N':
-                    if token.pos[4] == u'n':
-                        return False
-        return True
+            if re.match(u'(N...n.)|(P....n.)', token.pos):
+                return True
+        return False
 
     def finite(self):
         for token in self.shared_tokens:
-            if len(token.pos) > 2:
-                if token.pos[0] == u'V':
-                    # print token.content
-                    if token.pos[2] in u'imc':
-                        return True
-                    elif re.match(u'V.p....ps.', token.pos):
-                        # print token.content, 2
-                        return True
+            if re.match(u'(V.[imc].......)|(V.p....ps.)|(A.....s)', token.pos):
+                # print token.content, 2
+                return True
             if token.lex in predicates:
                 return True
+        return False
 
     def accept_base(self):
         for token in self.tokens:
