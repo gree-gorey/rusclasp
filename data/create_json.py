@@ -32,8 +32,8 @@ def create(type_of):
                 result[line[0]] = line[1].split(u',')
     return var[type_of] + u'.json', result
 
-name, result = create(0)
+name, res = create(0)
 
 w = codecs.open(name, u'w', u'utf-8')
-json.dump(result, w, ensure_ascii=False, indent=2)
+json.dump(res, w, ensure_ascii=False, indent=2)
 w.close()

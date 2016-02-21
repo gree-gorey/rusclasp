@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import os
+import re
 import codecs
 import json
 import copy
@@ -15,6 +16,7 @@ t = treetaggerwrapper.TreeTagger(TAGLANG=u'ru')
 prepositions = json.load(codecs.open(u'./data/prepositions.json', u'r', u'utf-8'))
 complimentizers = json.load(codecs.open(u'./data/complimentizers.json', u'r', u'utf-8'))
 inserted = json.load(codecs.open(u'./data/inserted.json', u'r', u'utf-8'))
+predicates = json.load(codecs.open(u'./data/predicates.json', u'r', u'utf-8'))
 
 
 class Corpus:
@@ -326,7 +328,7 @@ class Sentence:
                     last_connected = i
                     for j, following_span in enumerate(self.spans[i+1::], start=i+1):
                         if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
-                            if following_span.accept_embedded(span):
+                            if span.accept_embedded(following_span):
                                 if j != last_added + 1:
                                     if j != last_connected + 1:
                                         following_span.embedded = True
@@ -485,13 +487,18 @@ class Span:
 
     def accept_embedded(self, other):
         if self.inside_quotes is other.inside_quotes:
-            if other.embedded_type == u'gerund':  # or self.embedded_type == u'participle':
-                # print 0
-                return self.infinite()
-            elif other.embedded_type == u'relative' or other.embedded_type == u'complement':
-                return not(self.finite() and other.finite())
+            if self.embedded_type == u'gerund':  # or self.embedded_type == u'participle':
+                return other.infinite()
+            elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
+                if not(self.finite() and other.finite()):
+                    return not other.begin_with_and()
+                else:
+                    return False
         else:
             return False
+
+    def begin_with_and(self):
+        return self.tokens[0].lex == u'и'
 
     def infinite(self):
         for token in self.tokens:
@@ -508,8 +515,14 @@ class Span:
         for token in self.tokens:
             if len(token.pos) > 2:
                 if token.pos[0] == u'V':
+                    print token.content
                     if token.pos[2] in u'imc':
                         return True
+                    elif re.match(u'V.p....ps.', token.pos):
+                        print token.content, 2
+                        return True
+            if token.lex in predicates:
+                return True
 
     def accept_base(self):
         for token in self.tokens:
