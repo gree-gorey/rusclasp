@@ -23,6 +23,8 @@ for text in newCorpus.texts(u'json'):
 
         sentence.span_splitter()
 
+        sentence.get_shared_tokens()
+
         for span in sentence.spans:
 
             # decide whether span is inserted or embedded or neither

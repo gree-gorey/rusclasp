@@ -320,6 +320,10 @@ class Sentence:
             if begin and end and predicate:
                 self.tokens[left].pos = self.tokens[right].pos = u'COMMA'
 
+    def get_shared_tokens(self):
+        for span in self.spans:
+            span.shared_tokens += span.tokens
+
     def restore_embedded(self):
         for i, span in reversed(list(enumerate(self.spans))):
             if span.embedded:
@@ -329,6 +333,7 @@ class Sentence:
                     for j, following_span in enumerate(self.spans[i+1::], start=i+1):
                         if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
                             if span.accept_embedded(following_span):
+                                span.shared_tokens += following_span.tokens
                                 if j != last_added + 1:
                                     if j != last_connected + 1:
                                         following_span.embedded = True
@@ -428,6 +433,7 @@ class Sentence:
 class Span:
     def __init__(self):
         self.tokens = []
+        self.shared_tokens = []
         self.begin = 0
         self.end = 0
         self.embedded = False
@@ -501,7 +507,7 @@ class Span:
         return self.tokens[0].lex == u'и'
 
     def infinite(self):
-        for token in self.tokens:
+        for token in self.shared_tokens:
             if len(token.pos) > 2:
                 if token.pos[0] == u'V':
                     if token.pos[2] in u'imc':
@@ -512,14 +518,14 @@ class Span:
         return True
 
     def finite(self):
-        for token in self.tokens:
+        for token in self.shared_tokens:
             if len(token.pos) > 2:
                 if token.pos[0] == u'V':
-                    print token.content
+                    # print token.content
                     if token.pos[2] in u'imc':
                         return True
                     elif re.match(u'V.p....ps.', token.pos):
-                        print token.content, 2
+                        # print token.content, 2
                         return True
             if token.lex in predicates:
                 return True
