@@ -256,6 +256,7 @@ class Sentence:
         self.after_name = [False, 0]
         self.after_abbreviation = False
         self.span = False
+        self.quotes = False
 
     def contain_structure(self):
         for token in self.tokens:
@@ -269,6 +270,8 @@ class Sentence:
         if not self.span:
             self.span = True
             self.spans.append(Span())
+            if self.quotes:
+                self.spans[-1].inside_quotes = True
 
     def span_off(self):
         if self.span:
@@ -282,10 +285,15 @@ class Sentence:
             if token.content != u'\"':
                 self.span_on()
                 self.add_token(token)
+            else:
+                if not self.quotes:
+                    self.quotes = True
+                else:
+                    self.quotes = False
             if token.end_of_span():
                 self.span_off()
-            elif token.content != u'\"':
-                self.span_on()
+            # elif token.content != u'\"':
+            #     self.span_on()
         self.span_off()
 
     def eliminate_pair_comma(self):
@@ -422,6 +430,7 @@ class Span:
         self.inserted = False
         self.indicative = False
         self.gerund = 0
+        self.inside_quotes = False
         # self.finite = False
 
     def type(self):
@@ -449,7 +458,7 @@ class Span:
 
     def is_embedded(self):
         if not self.inserted:
-            if self.tokens[0].pos == u'C':
+            if self.tokens[0].pos[0] in u'CP':
                 if self.tokens[0].lex in complimentizers:
                     self.embedded_type = u'complement'
                     return True
@@ -468,11 +477,14 @@ class Span:
                 return True
 
     def accept_embedded(self, other):
-        if other.embedded_type == u'gerund':  # or self.embedded_type == u'participle':
-            # print 0
-            return self.infinite()
-        elif other.embedded_type == u'relative' or other.embedded_type == u'complement':
-            return not(self.finite() and other.finite())
+        if self.inside_quotes is other.inside_quotes:
+            if other.embedded_type == u'gerund':  # or self.embedded_type == u'participle':
+                # print 0
+                return self.infinite()
+            elif other.embedded_type == u'relative' or other.embedded_type == u'complement':
+                return not(self.finite() and other.finite())
+        else:
+            return False
 
     def infinite(self):
         for token in self.tokens:
