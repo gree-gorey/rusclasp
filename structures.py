@@ -136,6 +136,7 @@ class Text:
         elif token[u'gr'] == u'-':
             if token[u'lex'] in u'-:;—':
                 self.sentences[-1].tokens[-1].pos = u'COMMA'
+                self.sentences[-1].tokens[-1].lex = token[u'lex']
             elif token[u'lex'] in u'()':
                 self.sentences[-1].tokens[-1].pos = u'pairCOMMA'
             else:
@@ -276,6 +277,8 @@ class Sentence:
     def span_off(self):
         if self.span:
             self.span = False
+            if self.spans[-1].tokens[-1].lex == u';':
+                self.spans[-1].semicolon = True
             self.spans[-1].tokens.pop()
             if len(self.spans[-1].tokens) < 1:
                 self.spans.pop()
@@ -318,27 +321,30 @@ class Sentence:
     def restore_embedded(self):
         for i, span in reversed(list(enumerate(self.spans))):
             if span.embedded:
-                last_added = i
-                last_connected = i
-                for j, following_span in enumerate(self.spans[i+1::], start=i+1):
-                    if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
-                        if following_span.accept_embedded(span):
-                            if j != last_added + 1:
-                                if j != last_connected + 1:
-                                    following_span.embedded = True
-                                    following_span.embedded_type = span.embedded_type
-                                    self.relations.append((last_connected, j))
-                                    last_connected = j
+                if not span.semicolon:
+                    last_added = i
+                    last_connected = i
+                    for j, following_span in enumerate(self.spans[i+1::], start=i+1):
+                        if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
+                            if following_span.accept_embedded(span):
+                                if j != last_added + 1:
+                                    if j != last_connected + 1:
+                                        following_span.embedded = True
+                                        following_span.embedded_type = span.embedded_type
+                                        self.relations.append((last_connected, j))
+                                        last_connected = j
+                                    else:
+                                        self.spans[last_connected].tokens += following_span.tokens
+                                        following_span.in_embedded = True
+                                        last_added = j
                                 else:
-                                    self.spans[last_connected].tokens += following_span.tokens
+                                    span.tokens += following_span.tokens
                                     following_span.in_embedded = True
                                     last_added = j
                             else:
-                                span.tokens += following_span.tokens
-                                following_span.in_embedded = True
-                                last_added = j
-                        else:
-                            break
+                                break
+                            if following_span.semicolon:
+                                break
 
     def restore_base(self):
         for i, span in enumerate(self.spans):
@@ -431,6 +437,7 @@ class Span:
         self.indicative = False
         self.gerund = 0
         self.inside_quotes = False
+        self.semicolon = False
         # self.finite = False
 
     def type(self):
