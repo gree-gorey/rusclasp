@@ -324,6 +324,18 @@ class Sentence:
         for span in self.spans:
             span.shared_tokens += span.tokens
 
+    def split_double_complimentizers(self):
+        new = []
+        for span in self.spans:
+            if len(span.tokens) > 1:
+                if span.tokens[0].pos == u'C' and span.tokens[1].pos == u'C':
+                    new_span = Span()
+                    new_span.tokens += span.tokens[:1:]
+                    span.tokens.pop(0)
+                    new.append(new_span)
+            new.append(span)
+        self.spans = copy.deepcopy(new)
+
     def restore_embedded(self):
         for i, span in reversed(list(enumerate(self.spans))):
             if span.embedded:

@@ -23,9 +23,11 @@ for text in newCorpus.texts(u'json'):
 
         sentence.span_splitter()
 
-        sentence.get_shared_tokens()
+        sentence.get_shared_tokens()  # loop through all the spans 1
 
-        for span in sentence.spans:
+        sentence.split_double_complimentizers()  # loop through all the spans 2
+
+        for span in sentence.spans:  # loop through all the spans 3
 
             # decide whether span is inserted or embedded or neither
             span.type()
