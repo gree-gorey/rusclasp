@@ -5,6 +5,7 @@ import re
 import codecs
 import json
 import copy
+import shutil
 from pymystem3 import Mystem
 import treetaggerwrapper
 
@@ -37,7 +38,7 @@ class Corpus:
                     yield Text(result, open_name)
 
 # /home/gree-gorey/Corpus/
-# /opt/brat-v1.3_Crunchy_Frog/data/right/collection/'
+# /opt/brat-v1.3_Crunchy_Frog/data/right/
 
 
 class Text:
@@ -62,6 +63,8 @@ class Text:
     def treetagger_analyzer(self):
         self.result = self.result.replace(u' ', u' ')
         self.analysis = t.tag_text(self.result, tagblanks=True)
+        # for item in self.analysis:
+        #     print item
         position = 0
         new_analysis = []
         for token in self.analysis:
@@ -241,6 +244,14 @@ class Text:
         w = codecs.open(name, u'w', u'utf-8')
         json.dump(self.analysis, w, ensure_ascii=False, indent=2)
         w.close()
+
+    def copy_into_brat(self):
+        text = self.path.replace(u'json', u'txt')
+        ann = self.path.replace(u'json', u'ann')
+        # print text.split(u'/')[-1]
+        # print ann.split(u'/')[-1]
+        shutil.copy(text, u'/opt/brat-v1.3_Crunchy_Frog/data/right/' + text.split(u'/')[-1])
+        shutil.copy(ann, u'/opt/brat-v1.3_Crunchy_Frog/data/right/' + ann.split(u'/')[-1])
 
     def rewrite(self):
         w = codecs.open(self.path, u'w', u'utf-8')
