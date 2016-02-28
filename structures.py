@@ -248,15 +248,15 @@ class Text:
     def copy_into_brat(self):
         text = self.path.replace(u'json', u'txt')
         ann = self.path.replace(u'json', u'ann')
-        # print text.split(u'/')[-1]
-        # print ann.split(u'/')[-1]
         shutil.copy(text, u'/opt/brat-v1.3_Crunchy_Frog/data/right/' + text.split(u'/')[-1])
         shutil.copy(ann, u'/opt/brat-v1.3_Crunchy_Frog/data/right/' + ann.split(u'/')[-1])
 
-    def rewrite(self):
-        w = codecs.open(self.path, u'w', u'utf-8')
-        w.write(self.result)
-        w.close()
+    def normalize(self):
+        self.result = self.result.replace(u'\r\n', u'')
+        self.result = self.result.replace(u'\n', u'')
+        self.result = self.result.replace(u'…', u'...')
+        with codecs.open(self.path, u'w', u'utf-8') as w:
+            w.write(self.result)
 
 
 class Sentence:

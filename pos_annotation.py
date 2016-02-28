@@ -11,6 +11,7 @@ newCorpus = Corpus(u'/home/gree-gorey/Corpus/')
 
 for text in newCorpus.texts(u'txt'):
     # text.mystem_analyzer()
+    text.normalize()
     text.treetagger_analyzer()
     text.write_pos_ann()
 
