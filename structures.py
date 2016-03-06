@@ -140,10 +140,10 @@ class Text:
                         if next_token[u'text'][0].isdigit():
                             self.sentences[-1].tokens[-1].pos = u'pseudoCOMMA'
         elif token[u'gr'] == u'-':
-            if token[u'lex'] in u'-:;—':
+            if token[u'lex'] in u'-:;':
                 self.sentences[-1].tokens[-1].pos = u'COMMA'
                 self.sentences[-1].tokens[-1].lex = token[u'lex']
-            elif token[u'lex'] in u'()':
+            elif token[u'lex'] in u'()—':
                 self.sentences[-1].tokens[-1].pos = u'pairCOMMA'
             else:
                 self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
@@ -269,7 +269,7 @@ class Sentence:
     def span_off(self):
         if self.span:
             self.span = False
-            if self.spans[-1].tokens[-1].lex in u';()':
+            if self.spans[-1].tokens[-1].content in u';()':
                 self.spans[-1].semicolon = True
             self.spans[-1].tokens.pop()
             if len(self.spans[-1].tokens) < 1:
@@ -294,6 +294,8 @@ class Sentence:
     def eliminate_pair_comma(self):
         predicate = False
         begin = False
+        end = False
+        left = right = None
         for i, token in enumerate(self.tokens):
             if token.pos == u'pairCOMMA' and not begin:
                 left = i
@@ -307,6 +309,9 @@ class Sentence:
                 if predicate:
                     self.tokens[left].pos = self.tokens[right].pos = u'COMMA'
                 predicate = False
+                end = True
+        if not end and left:
+            self.tokens[left].pos = u'COMMA'
 
     def get_shared_tokens(self):
         for span in self.spans:
@@ -345,6 +350,7 @@ class Sentence:
                                         following_span.embedded_type = span.embedded_type
                                         self.relations.append((last_connected, j))
                                         last_connected = j
+                                        # span.semicolon = following_span.semicolon
                                     else:
                                         break
 
@@ -354,6 +360,7 @@ class Sentence:
                                         self.spans[last_connected].tokens += following_span.tokens
                                         following_span.in_embedded = True
                                         last_added = j
+                                        # span.semicolon = following_span.semicolon
                                     else:
                                         break
 
@@ -364,11 +371,12 @@ class Sentence:
                                     span.shared_tokens += following_span.tokens
                                     following_span.in_embedded = True
                                     last_added = j
+                                    # span.semicolon = following_span.semicolon
                                 else:
                                     break
 
-                            if following_span.semicolon:
-                                break
+                        if following_span.semicolon:
+                            break
 
     def restore_base(self):
         for i, span in enumerate(self.spans):
@@ -485,6 +493,9 @@ class Span:
                     if token.pos[0] == u'N' and token_left.pos[0] == u'N':
                         if token.pos[4] == token_left.pos[4]:
                             return True
+                    elif token.pos[0] == u'A' and token_left.pos[0] == u'A':
+                        if token.pos[5] == token_left.pos[5]:
+                            return True
 
 
     def type(self):
@@ -543,7 +554,7 @@ class Span:
             if self.embedded_type == u'gerund' or self.embedded_type == u'participle':
                 return not other.finite() and not other.nominative()
             elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
-                if not(self.finite() and other.finite()) and not(self.nominative() and other.nominative()):
+                if not(self.finite() and other.finite()):  # and not(self.nominative() and other.nominative()):
                     return not other.begin_with_and()
                 else:
                     return False
