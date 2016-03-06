@@ -332,25 +332,42 @@ class Sentence:
                     last_added = i
                     last_connected = i
                     for j, following_span in enumerate(self.spans[i+1::], start=i+1):
+                        print u' '.join([token.content for token in span.tokens])
                         if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
-                            if span.accept_embedded(following_span):
-                                span.shared_tokens += following_span.tokens
-                                if j != last_added + 1:
-                                    if j != last_connected + 1:
+
+                            # если это НЕ непосредственно следующий за последним поглощённым спаном
+                            if j != last_added + 1:
+
+                                # если это НЕ непосредственно следующий за последним присоединённым спаном
+                                if j != last_connected + 1:
+                                    if span.accept_embedded(following_span):
+                                        span.shared_tokens += following_span.tokens
                                         following_span.embedded = True
                                         following_span.embedded_type = span.embedded_type
                                         self.relations.append((last_connected, j))
                                         last_connected = j
                                     else:
+                                        break
+
+                                else:
+                                    # проверка на сочинение!
+                                    if span.accept_embedded(following_span):
                                         self.spans[last_connected].tokens += following_span.tokens
                                         following_span.in_embedded = True
                                         last_added = j
-                                else:
+                                    else:
+                                        break
+
+                            else:
+                                # проверка на сочинение!
+                                if span.accept_embedded(following_span) and span.coordinate(following_span):
                                     span.tokens += following_span.tokens
+                                    span.shared_tokens += following_span.tokens
                                     following_span.in_embedded = True
                                     last_added = j
-                            else:
-                                break
+                                else:
+                                    break
+
                             if following_span.semicolon:
                                 break
 
@@ -430,33 +447,6 @@ class Sentence:
         #         if token.pos == u'COMMA':
         #             token.pos = u'pseudoCOMMA'
 
-    def find_coordination(self):
-        for i, token in enumerate(self.tokens):
-            if token.pos == u'COMMA':
-                if self.find_left(i):
-                    token.pos = u'pseudoCOMMA'
-
-    def find_left(self, i):
-        for token in self.tokens[i-1::-1]:
-            if token.predicate() or token.pos == u'COMMA':
-                # print token.content, u'left'
-                return False
-            else:
-                if self.find_right(i, token):
-                    return True
-
-    def find_right(self, i, token_left):
-        for token in self.tokens[i+1::]:
-            if token.predicate() or token.pos == u'COMMA':
-                # print token.content, u'right'
-                return False
-            else:
-                if len(token.pos) > 4 and len(token_left.pos) > 4:
-                    if token.pos[0] == u'N' and token_left.pos[0] == u'N':
-                        if token.pos[4] == token_left.pos[4]:
-                            # print token.content, token_left.content
-                            return True
-
 
 class Span:
     def __init__(self):
@@ -475,6 +465,25 @@ class Span:
         self.inside_quotes = False
         self.semicolon = False
         # self.finite = False
+
+    def coordinate(self, following_span):
+        for token in reversed(self.tokens):
+            if token.predicate():
+                return False
+            else:
+                if following_span.find_right(token):
+                    return True
+
+    def find_right(self, token_left):
+        for token in self.tokens:
+            if token.predicate():
+                return False
+            else:
+                if len(token.pos) > 4 and len(token_left.pos) > 4:
+                    if token.pos[0] == u'N' and token_left.pos[0] == u'N':
+                        if token.pos[4] == token_left.pos[4]:
+                            return True
+
 
     def type(self):
         if self.is_inserted():
@@ -509,6 +518,11 @@ class Span:
                 if not self.finite():
                     self.embedded_type = u'participle'
                     return True
+            elif self.tokens[0].pos == u'R' and len(self.tokens) > 1:
+                if re.match(u'V.p.......', self.tokens[1].pos):
+                    if not self.finite():
+                        self.embedded_type = u'participle'
+                        return True
             for token in self.tokens:
                 if token.lex == u'который':
                     self.embedded_type = u'relative'
@@ -528,7 +542,7 @@ class Span:
             if self.embedded_type == u'gerund' or self.embedded_type == u'participle':
                 return not other.finite() and not other.nominative()
             elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
-                if not(self.finite() and other.finite()):
+                if not(self.finite() and other.finite()) and not(self.nominative() and other.nominative()):
                     return not other.begin_with_and()
                 else:
                     return False
