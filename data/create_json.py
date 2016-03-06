@@ -8,7 +8,8 @@ def create(type_of):
     var = [u'predicates',
            u'inserted',
            u'complimentizers',
-           u'prepositions']
+           u'prepositions',
+           u'inserted_evidence']
     result = None
     with codecs.open(var[type_of] + u'.csv', u'r', u'utf-8') as f:
         if type_of == 1:
@@ -20,7 +21,7 @@ def create(type_of):
                     result[words[0]].append(line)
                 else:
                     result[words[0]] = [line]
-        elif type_of == 2 or type_of == 0:
+        elif type_of == 2 or type_of == 0 or type_of == 4:
             result = []
             for line in f:
                 line = line.rstrip()
@@ -32,7 +33,7 @@ def create(type_of):
                 result[line[0]] = line[1].split(u',')
     return var[type_of] + u'.json', result
 
-name, res = create(0)
+name, res = create(4)
 
 w = codecs.open(name, u'w', u'utf-8')
 json.dump(res, w, ensure_ascii=False, indent=2)

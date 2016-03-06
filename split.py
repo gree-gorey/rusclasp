@@ -15,9 +15,10 @@ for text in newCorpus.texts(u'json'):
     for sentence in text.sentences:
 
         # for token in sentence.tokens:
-        #     print token.content, token.pos
+        #     print token.pos, token.content
+        # print u'***************'
 
-        sentence.find_pp()
+        # sentence.find_pp()
 
         # sentence.find_coordination()
 

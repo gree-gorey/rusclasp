@@ -18,6 +18,7 @@ prepositions = json.load(codecs.open(u'./data/prepositions.json', u'r', u'utf-8'
 complimentizers = json.load(codecs.open(u'./data/complimentizers.json', u'r', u'utf-8'))
 inserted = json.load(codecs.open(u'./data/inserted.json', u'r', u'utf-8'))
 predicates = json.load(codecs.open(u'./data/predicates.json', u'r', u'utf-8'))
+inserted_evidence = json.load(codecs.open(u'./data/inserted_evidence.json', u'r', u'utf-8'))
 
 
 class Corpus:
@@ -268,7 +269,7 @@ class Sentence:
     def span_off(self):
         if self.span:
             self.span = False
-            if self.spans[-1].tokens[-1].lex == u';':
+            if self.spans[-1].tokens[-1].lex in u';()':
                 self.spans[-1].semicolon = True
             self.spans[-1].tokens.pop()
             if len(self.spans[-1].tokens) < 1:
@@ -293,7 +294,6 @@ class Sentence:
     def eliminate_pair_comma(self):
         predicate = False
         begin = False
-        end = False
         for i, token in enumerate(self.tokens):
             if token.pos == u'pairCOMMA' and not begin:
                 left = i
@@ -303,11 +303,10 @@ class Sentence:
                 predicate = True
             elif token.pos == u'pairCOMMA' and begin:
                 right = i
-                end = True
                 begin = False
+                if predicate:
+                    self.tokens[left].pos = self.tokens[right].pos = u'COMMA'
                 predicate = False
-            if begin and end and predicate:
-                self.tokens[left].pos = self.tokens[right].pos = u'COMMA'
 
     def get_shared_tokens(self):
         for span in self.spans:
@@ -332,7 +331,7 @@ class Sentence:
                     last_added = i
                     last_connected = i
                     for j, following_span in enumerate(self.spans[i+1::], start=i+1):
-                        print u' '.join([token.content for token in span.tokens])
+                        # print u' '.join([token.content for token in span.tokens])
                         if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
 
                             # если это НЕ непосредственно следующий за последним поглощённым спаном
@@ -428,13 +427,16 @@ class Sentence:
             if token.pos[0] == u'S':
                 # print token.content, u'\n'
                 for j, following_token in enumerate(self.tokens[i+1::], start=i+1):
-                    # print following_token.content, 555
+                    # print following_token.content, 555, following_token.in_pp
                     if not following_token.in_pp:
+                        # print following_token.content, 777
                         if following_token.pos[0] in u'NP':
+                            # print following_token.content, 888
                             if token.agree_pr_noun(following_token):
                                 # print following_token.content
                                 self.pp.append([i, j])
                                 for inner_token in self.tokens[i: j+1]:
+                                    print inner_token.content
                                     inner_token.in_pp = True
                                     if inner_token.pos == u'COMMA':
                                         inner_token.pos = u'pseudoCOMMA'
@@ -495,8 +497,7 @@ class Span:
         if len(self.tokens) < 10:
             if self.tokens[0].lex == u'по':
                 if len(self.tokens) > 2:
-                    if self.tokens[1].content == u'словам' or self.tokens[1].content ==\
-                            u'мнению' or self.tokens[2].content == u'словам':
+                    if self.tokens[1].content in inserted_evidence or self.tokens[2].content in inserted_evidence:
                         return True
             if self.tokens[0].content.lower() in inserted:
                 # print self.tokens[0].content.lower()
