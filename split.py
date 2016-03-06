@@ -19,6 +19,8 @@ for text in newCorpus.texts(u'json'):
 
         sentence.find_pp()
 
+        # sentence.find_coordination()
+
         sentence.eliminate_pair_comma()
 
         sentence.span_splitter()

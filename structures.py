@@ -192,32 +192,11 @@ class Text:
         j = 0
 
         write_name = self.path.replace(u'json', u'ann')
-        # write_name = self.path.replace(u'txt', u'ann')
         w = codecs.open(write_name, u'w', u'utf-8')
 
-        # for token in self.analysis:
-        #     i += 1
-        #     line = u'T' + str(i) + u'\t' + u'Base ' + str(token[u'begin']) + u' ' + str(token[u'end']) + u'\t' + u'\n'
-        #     w.write(line)
-
-        # for sentence in self.sentences:
-        #     i += 1
-        #     line = u'T' + str(i) + u'\t' + u'Base ' + str(sentence.tokens[0].begin) + u' '\
-        #            + str(sentence.tokens[-1].end) + u'\t' + u'\n'
-        #     w.write(line)
-
         for sentence in self.sentences:
-            # for pair in sentence.pp:
-            #     # print sentence.tokens[pair[0]].begin, sentence.tokens[pair[1]].end
-            #     i += 1
-            #     line = u'T' + str(i) + u'\t' + u'Base ' + str(sentence.tokens[pair[0]].begin) + u' ' + str(sentence.tokens[pair[1]].end) + u'\t' + u'\n'
-            #     w.write(line)
             for span in sentence.spans:
-                # i += 1
-                # line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                # w.write(line)
                 if span.embedded:
-                    # if span.embedded_type == u'gerund':
                     i += 1
                     line = u'T' + str(i) + u'\t' + u'Embedded ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                     w.write(line)
@@ -226,7 +205,6 @@ class Text:
                     line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                     w.write(line)
                 # elif span.base:
-                # elif not span.in_embedded:
                 #     i += 1
                 #     line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                 #     w.write(line)
@@ -252,8 +230,8 @@ class Text:
         shutil.copy(ann, u'/opt/brat-v1.3_Crunchy_Frog/data/right/' + ann.split(u'/')[-1])
 
     def normalize(self):
-        self.result = self.result.replace(u'\r\n', u'')
-        self.result = self.result.replace(u'\n', u'')
+        self.result = self.result.replace(u'\r\n', u' ')
+        self.result = self.result.replace(u'\n', u' ')
         self.result = self.result.replace(u'…', u'...')
         with codecs.open(self.path, u'w', u'utf-8') as w:
             w.write(self.result)
@@ -452,6 +430,33 @@ class Sentence:
         #         if token.pos == u'COMMA':
         #             token.pos = u'pseudoCOMMA'
 
+    def find_coordination(self):
+        for i, token in enumerate(self.tokens):
+            if token.pos == u'COMMA':
+                if self.find_left(i):
+                    token.pos = u'pseudoCOMMA'
+
+    def find_left(self, i):
+        for token in self.tokens[i-1::-1]:
+            if token.predicate() or token.pos == u'COMMA':
+                # print token.content, u'left'
+                return False
+            else:
+                if self.find_right(i, token):
+                    return True
+
+    def find_right(self, i, token_left):
+        for token in self.tokens[i+1::]:
+            if token.predicate() or token.pos == u'COMMA':
+                # print token.content, u'right'
+                return False
+            else:
+                if len(token.pos) > 4 and len(token_left.pos) > 4:
+                    if token.pos[0] == u'N' and token_left.pos[0] == u'N':
+                        if token.pos[4] == token_left.pos[4]:
+                            # print token.content, token_left.content
+                            return True
+
 
 class Span:
     def __init__(self):
@@ -575,6 +580,13 @@ class Token:
         self.next_token_name = False
         self.in_pp = False
         self.in_np = False
+
+    def predicate(self):
+        if re.match(u'(V.*)|(A.....s)', self.pos):
+            return True
+        if self.lex in predicates:
+            return True
+        return False
 
     def end_of_span(self):
         return self.pos == u'COMMA'
