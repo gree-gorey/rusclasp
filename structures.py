@@ -234,6 +234,7 @@ class Text:
         self.result = self.result.replace(u'\r\n', u' ')
         self.result = self.result.replace(u'\n', u' ')
         self.result = self.result.replace(u'…', u'...')
+        self.result = re.sub(u'( |^)[A-Za-z]+?\.[A-Za-z].*?( |$)', u'\\1"Английское название"\\2', self.result, flags=re.U)
         with codecs.open(self.path, u'w', u'utf-8') as w:
             w.write(self.result)
 
@@ -530,7 +531,7 @@ class Span:
                 if not self.finite():
                     self.embedded_type = u'participle'
                     return True
-            elif self.tokens[0].pos == u'R' and len(self.tokens) > 1:
+            elif self.tokens[0].pos in u'QR' and len(self.tokens) > 1:
                 if re.match(u'V.p.......', self.tokens[1].pos):
                     if not self.finite():
                         self.embedded_type = u'participle'
@@ -573,7 +574,6 @@ class Span:
     def finite(self):
         for token in self.shared_tokens:
             if re.match(u'(V.[imc].......)|(V.p....ps.)|(A.....s)', token.pos):
-                # print token.content, 2
                 return True
             if token.lex in predicates:
                 return True
