@@ -9,7 +9,8 @@ def create(type_of):
            u'inserted',
            u'complimentizers',
            u'prepositions',
-           u'inserted_evidence']
+           u'inserted_evidence',
+           u'complex_complimentizers']
     result = None
     with codecs.open(var[type_of] + u'.csv', u'r', u'utf-8') as f:
         if type_of == 1:
@@ -21,6 +22,16 @@ def create(type_of):
                     result[words[0]].append(line)
                 else:
                     result[words[0]] = [line]
+        if type_of == 5:
+            result = {}
+            for line in f:
+                line = line.rstrip()
+                words = line.split(u' ')
+                result[words[0]] = [line, len(words)]
+                # if words[0] in result:
+                #     result[words[0]].append(line)
+                # else:
+                #     result[words[0]] = [line]
         elif type_of == 2 or type_of == 0 or type_of == 4:
             result = []
             for line in f:

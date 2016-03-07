@@ -22,6 +22,8 @@ for text in newCorpus.texts(u'json'):
 
         # sentence.find_coordination()
 
+        sentence.find_complimentizers()
+
         sentence.eliminate_pair_comma()
 
         sentence.span_splitter()
@@ -34,7 +36,7 @@ for text in newCorpus.texts(u'json'):
 
             # decide whether span is inserted or embedded or neither
             span.type()
-            # print span.tokens[0].content, span.nominative()
+            # print span.tokens[0].content, span.embedded_type
 
         # split embedded span if it contains > 1 predicate
         sentence.split_embedded()

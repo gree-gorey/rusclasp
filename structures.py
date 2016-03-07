@@ -19,6 +19,7 @@ complimentizers = json.load(codecs.open(u'./data/complimentizers.json', u'r', u'
 inserted = json.load(codecs.open(u'./data/inserted.json', u'r', u'utf-8'))
 predicates = json.load(codecs.open(u'./data/predicates.json', u'r', u'utf-8'))
 inserted_evidence = json.load(codecs.open(u'./data/inserted_evidence.json', u'r', u'utf-8'))
+complex_complimentizers = json.load(codecs.open(u'./data/complex_complimentizers.json', u'r', u'utf-8'))
 
 
 class Corpus:
@@ -410,6 +411,33 @@ class Sentence:
                                         break
         self.spans = copy.deepcopy(new_spans)
 
+    def find_complimentizers(self):
+        for i, token in enumerate(self.tokens):
+            if token.content.lower() in complex_complimentizers:
+                # print token.lex
+                end = i + complex_complimentizers[token.lex][1]
+                if len(self.tokens) >= end + 1:
+                    new = [token]
+                    j = i
+                    while len(new) != complex_complimentizers[token.content.lower()][1]:
+                        j += 1
+                        if u'COMMA' not in self.tokens[j].pos:
+                            new.append(self.tokens[j])
+                    new_complimentizer = u' '.join([next_token.content.lower() for next_token in new])
+                    # print new_complimentizer_lex, 2
+                    if new_complimentizer == complex_complimentizers[token.lex][0]:
+                        token.content = new_complimentizer
+                        token.lex = new_complimentizer
+                        token.pos = u'C'
+                        token.end = new[-1].end
+                        for next_token in self.tokens[i+1:j+1:]:
+                            self.tokens.remove(next_token)
+                        if i != 0:
+                            if u'COMMA' not in self.tokens[i-1].pos:
+                                new_comma = Token()
+                                new_comma.pos = u'COMMA'
+                                self.tokens.insert(i, new_comma)
+
     def find_np(self):
         match = -1
         for i, token in enumerate(self.tokens):
@@ -524,6 +552,7 @@ class Span:
     def is_embedded(self):
         if not self.inserted:
             if self.tokens[0].pos[0] in u'CP':
+                # print self.tokens[0].content
                 if self.tokens[0].lex in complimentizers:
                     self.embedded_type = u'complement'
                     return True
