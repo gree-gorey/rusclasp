@@ -144,9 +144,12 @@ class Text:
             if token[u'lex'] in u'-:;':
                 self.sentences[-1].tokens[-1].pos = u'COMMA'
                 self.sentences[-1].tokens[-1].lex = token[u'lex']
-            elif token[u'lex'] in u'()—':
+            elif token[u'lex'] in u'—':
                 self.sentences[-1].tokens[-1].pos = u'pairCOMMA'
                 self.sentences[-1].tokens[-1].lex = token[u'lex']
+            elif token[u'lex'] in u'()':
+                self.sentences[-1].tokens[-1].pos = u'pairCOMMA'
+                self.sentences[-1].tokens[-1].lex = u'|'
             elif token[u'lex'] in u'"':
                 self.sentences[-1].tokens[-1].pos = u'QUOTE'
             else:
@@ -219,6 +222,12 @@ class Text:
                 line = u'R' + str(j) + u'\t' + u'Split Arg1:T' + str(sentence.spans[r[0]].entity_number) +\
                        u' Arg2:T' + str(sentence.spans[r[1]].entity_number) + u'\t' + u'\n'
                 w.write(line)
+            for r in sentence.verb_relations:
+                # print sentence.spans[r[1]].entity_number
+                j += 1
+                line = u'R' + str(j) + u'\t' + u'Coordination Arg1:T' + str(sentence.spans[r[0]].entity_number) +\
+                       u' Arg2:T' + str(sentence.spans[r[1]].entity_number) + u'\t' + u'\n'
+                w.write(line)
 
         w.close()
 
@@ -249,6 +258,7 @@ class Sentence:
         self.spans = []
         self.chunks = []
         self.relations = []
+        self.verb_relations = []
         self.np = []
         self.pp = []
         self.after_name = [False, 0]
@@ -300,19 +310,19 @@ class Sentence:
 
     def eliminate_pair_comma(self):
         predicate = False
-        begin = {u'—': False, u'(': False}
+        begin = {u'—': False, u'|': False}
         end = False
         left = right = None
         for i, token in enumerate(self.tokens):
-            if token.pos == u'pairCOMMA' and not begin[token.content]:
+            if token.pos == u'pairCOMMA' and not begin[token.lex]:
                 left = i
-                begin[token.content] = True
+                begin[token.lex] = True
                 end = False
             elif token.pos[0] == u'V' and sum(begin.values()) > 0:
                 predicate = True
-            elif token.pos == u'pairCOMMA' and begin[token.content]:
+            elif token.pos == u'pairCOMMA' and begin[token.lex]:
                 right = i
-                begin[token.content] = False
+                begin[token.lex] = False
                 if predicate:
                     self.tokens[left].pos = self.tokens[right].pos = u'COMMA'
                 predicate = False
@@ -357,48 +367,59 @@ class Sentence:
                 if not span.semicolon:
                     last_added = i
                     last_connected = i
+                    last_connected_verb = i
                     for j, following_span in enumerate(self.spans[i+1::], start=i+1):
                         # print u' '.join([token.content for token in span.tokens])
                         if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
 
-                            # если это НЕ непосредственно следующий за последним поглощённым спаном
-                            if j != last_added + 1:
+                            if span.predicate_coordination(following_span):
+                                # print following_span.tokens[0].content
+                                # print last_connected, j
+                                following_span.embedded = True
+                                following_span.embedded_type = span.embedded_type
+                                self.verb_relations.append((last_connected_verb, j))
+                                last_connected_verb = j
 
-                                # если это НЕ непосредственно следующий за последним присоединённым спаном
-                                if j != last_connected + 1:
-                                    if span.accept_embedded(following_span):
-                                        span.shared_tokens += following_span.tokens
-                                        following_span.embedded = True
-                                        following_span.embedded_type = span.embedded_type
-                                        self.relations.append((last_connected, j))
-                                        last_connected = j
-                                        # span.semicolon = following_span.semicolon
+                            else:
+
+                                # если это НЕ непосредственно следующий за последним поглощённым спаном
+                                if j != last_added + 1:
+
+                                    # если это НЕ непосредственно следующий за последним присоединённым спаном
+                                    if j != last_connected + 1:
+                                        if span.accept_embedded(following_span):
+                                            span.shared_tokens += following_span.tokens
+                                            following_span.embedded = True
+                                            following_span.embedded_type = span.embedded_type
+                                            self.relations.append((last_connected, j))
+                                            last_connected = j
+                                            # span.semicolon = following_span.semicolon
+                                        else:
+                                            break
+
                                     else:
-                                        break
+                                        # print span.tokens[0], 888
+                                        # проверка на сочинение!
+                                        if span.accept_embedded(following_span):
+                                            self.spans[last_connected].tokens += following_span.tokens
+                                            following_span.in_embedded = True
+                                            last_added = j
+                                            # span.semicolon = following_span.semicolon
+                                        else:
+                                            break
 
                                 else:
-                                    print span.tokens[0], 888
+                                    # print following_span.tokens[0].content, 777
                                     # проверка на сочинение!
-                                    if span.accept_embedded(following_span):
-                                        self.spans[last_connected].tokens += following_span.tokens
+                                    # print span.accept_embedded(following_span), span.coordinate(following_span)
+                                    if span.accept_embedded(following_span) and span.coordinate(following_span):
+                                        span.tokens += following_span.tokens
+                                        span.shared_tokens += following_span.tokens
                                         following_span.in_embedded = True
                                         last_added = j
                                         # span.semicolon = following_span.semicolon
                                     else:
                                         break
-
-                            else:
-                                # print following_span.tokens[0].content, 777
-                                # проверка на сочинение!
-                                # print span.accept_embedded(following_span), span.coordinate(following_span)
-                                if span.accept_embedded(following_span) and span.coordinate(following_span):
-                                    span.tokens += following_span.tokens
-                                    span.shared_tokens += following_span.tokens
-                                    following_span.in_embedded = True
-                                    last_added = j
-                                    # span.semicolon = following_span.semicolon
-                                else:
-                                    break
 
                         if following_span.semicolon:
                             break
@@ -528,6 +549,14 @@ class Span:
         self.semicolon = False
         self.before_dash = False
         # self.finite = False
+
+    def predicate_coordination(self, following_span):
+        for token in self.shared_tokens:
+            if token.predicate():
+                for other_token in following_span.tokens:
+                    if token.pos[0] == u'V' and other_token.pos[0] == u'V':
+                        if token.pos[2:8:] == other_token.pos[2:8:]:
+                            return True
 
     def coordinate(self, following_span):
         if self.before_dash:
