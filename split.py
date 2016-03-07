@@ -46,7 +46,7 @@ for text in newCorpus.texts(u'json'):
         # walk through spans and join whenever possible
         sentence.restore_embedded()
 
-        # sentence.restore_base()
+        sentence.restore_base()
 
         for span in sentence.spans:
             span.get_boundaries()

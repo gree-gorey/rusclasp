@@ -212,10 +212,10 @@ class Text:
                     i += 1
                     line = u'T' + str(i) + u'\t' + u'Inserted ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
                     w.write(line)
-                # elif span.base:
-                #     i += 1
-                #     line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
-                #     w.write(line)
+                elif span.base:
+                    i += 1
+                    line = u'T' + str(i) + u'\t' + u'Base ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                    w.write(line)
                 span.entity_number = i
             for r in sentence.relations:
                 j += 1
@@ -247,7 +247,10 @@ class Text:
         self.result = self.result.replace(u'\r\n', u' ')
         self.result = self.result.replace(u'\n', u' ')
         self.result = self.result.replace(u'…', u'...')
-        self.result = re.sub(u'( |^)[A-Za-z]+?\.[A-Za-z].*?( |$)', u'\\1"Английское название"\\2', self.result, flags=re.U)
+        self.result = re.sub(u'( |^)[A-Za-z]+?\.[A-Za-z].*?( |$)', u'\\1"Английское название"\\2', self.result,
+                             flags=re.U)
+        self.result = re.sub(u' +', u' ', self.result, flags=re.U)
+        self.result = re.sub(u' $', u'', self.result, flags=re.U)
         with codecs.open(self.path, u'w', u'utf-8') as w:
             w.write(self.result)
 
@@ -433,21 +436,23 @@ class Sentence:
         new_spans = []
         for span in self.spans:
             new_spans.append(span)
-            find_2nd_gerund = False
+            find_coordination = False
             if span.embedded:
-                if span.embedded_type == u'gerund':
-                    if span.gerund > 1:
+                if span.embedded_type == u'gerund' or span.embedded_type == u'relative':
+                    if span.gerund > 1 or span.relative > 0:
                         for i, token in reversed(list(enumerate(span.tokens))):
                             if len(token.pos) > 2:
                                 if token.pos[0] == u'V':
                                     if token.pos[2] == u'g':
-                                        find_2nd_gerund = True
+                                        find_coordination = True
+                                elif token.lex == u'который':
+                                    find_coordination = True
                             elif token.lex == u'и':
-                                if find_2nd_gerund:
+                                if find_coordination:
                                     if i > 0:
                                         new_span = Span()
                                         new_span.embedded = True
-                                        new_span.embedded_type = u'gerund'
+                                        new_span.embedded_type = span.embedded_type
                                         for following_token in span.tokens[i::]:
                                             new_span.tokens.append(following_token)
                                         new_spans[-1].tokens = span.tokens[:i:]
@@ -545,6 +550,7 @@ class Span:
         self.inserted = False
         self.indicative = False
         self.gerund = 0
+        self.relative = 0
         self.inside_quotes = False
         self.semicolon = False
         self.before_dash = False
@@ -555,7 +561,9 @@ class Span:
             if token.predicate():
                 for other_token in following_span.tokens:
                     if token.pos[0] == u'V' and other_token.pos[0] == u'V':
-                        if token.pos[2:8:] == other_token.pos[2:8:]:
+                        # print token.content
+                        if token.coordinate(other_token):
+                            # print token.content
                             return True
 
     def coordinate(self, following_span):
@@ -627,8 +635,7 @@ class Span:
                         return True
             for token in self.tokens:
                 if token.lex == u'который':
-                    self.embedded_type = u'relative'
-                    return True
+                    self.relative += 1
                 if len(token.pos) > 2:
                     if token.pos[0] == u'V':
                         if token.pos[2] == u'g':
@@ -637,6 +644,9 @@ class Span:
                             self.indicative = True
             if self.gerund > 0 and not self.indicative:
                 self.embedded_type = u'gerund'
+                return True
+            elif self.relative > 0:
+                self.embedded_type = u'relative'
                 return True
 
     def accept_embedded(self, other):
@@ -696,6 +706,17 @@ class Token:
         self.next_token_name = False
         self.in_pp = False
         self.in_np = False
+
+    def coordinate(self, other):
+        pos = zip(self.pos, other.pos)[1:3:] + zip(self.pos, other.pos)[4:7:]
+        # print pos
+        for item in pos:
+            if u'-' in item:
+                pass
+            else:
+                if item[0] != item[1]:
+                    return False
+        return True
 
     def predicate(self):
         if re.match(u'(V.*)|(A.....s)', self.pos):
