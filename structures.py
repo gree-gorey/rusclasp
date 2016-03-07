@@ -146,6 +146,9 @@ class Text:
                 self.sentences[-1].tokens[-1].lex = token[u'lex']
             elif token[u'lex'] in u'()—':
                 self.sentences[-1].tokens[-1].pos = u'pairCOMMA'
+                self.sentences[-1].tokens[-1].lex = token[u'lex']
+            elif token[u'lex'] in u'"':
+                self.sentences[-1].tokens[-1].pos = u'QUOTE'
             else:
                 self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
                 self.sentences[-1].tokens[-1].lex = token[u'lex']
@@ -273,6 +276,8 @@ class Sentence:
             self.span = False
             if self.spans[-1].tokens[-1].content in u';()':
                 self.spans[-1].semicolon = True
+            elif self.spans[-1].tokens[-1].content == u'—':
+                self.spans[-1].before_dash = True
             self.spans[-1].tokens.pop()
             if len(self.spans[-1].tokens) < 1:
                 self.spans.pop()
@@ -295,25 +300,40 @@ class Sentence:
 
     def eliminate_pair_comma(self):
         predicate = False
-        begin = False
+        begin = {u'—': False, u'(': False}
         end = False
         left = right = None
         for i, token in enumerate(self.tokens):
-            if token.pos == u'pairCOMMA' and not begin:
+            if token.pos == u'pairCOMMA' and not begin[token.content]:
                 left = i
-                begin = True
+                begin[token.content] = True
                 end = False
-            elif token.pos[0] == u'V' and begin:
+            elif token.pos[0] == u'V' and sum(begin.values()) > 0:
                 predicate = True
-            elif token.pos == u'pairCOMMA' and begin:
+            elif token.pos == u'pairCOMMA' and begin[token.content]:
                 right = i
-                begin = False
+                begin[token.content] = False
                 if predicate:
                     self.tokens[left].pos = self.tokens[right].pos = u'COMMA'
                 predicate = False
                 end = True
         if not end and left:
             self.tokens[left].pos = u'COMMA'
+
+    def find_names(self):
+        begin = False
+        name = False
+        for i, token in enumerate(self.tokens):
+            if token.pos == u'QUOTE' and not begin:
+                if len(self.tokens) > i+1:
+                    if self.tokens[i+1].content.istitle():
+                        name = True
+                begin = True
+            elif token.pos[0] == u'V' and begin:
+                if name:
+                    token.pos = u'insideNAME'
+            elif token.pos == u'QUOTE' and begin:
+                begin = False
 
     def get_shared_tokens(self):
         for span in self.spans:
@@ -357,6 +377,7 @@ class Sentence:
                                         break
 
                                 else:
+                                    print span.tokens[0], 888
                                     # проверка на сочинение!
                                     if span.accept_embedded(following_span):
                                         self.spans[last_connected].tokens += following_span.tokens
@@ -367,7 +388,9 @@ class Sentence:
                                         break
 
                             else:
+                                # print following_span.tokens[0].content, 777
                                 # проверка на сочинение!
+                                # print span.accept_embedded(following_span), span.coordinate(following_span)
                                 if span.accept_embedded(following_span) and span.coordinate(following_span):
                                     span.tokens += following_span.tokens
                                     span.shared_tokens += following_span.tokens
@@ -503,24 +526,32 @@ class Span:
         self.gerund = 0
         self.inside_quotes = False
         self.semicolon = False
+        self.before_dash = False
         # self.finite = False
 
     def coordinate(self, following_span):
-        for token in reversed(self.tokens):
+        if self.before_dash:
+            return True
+        for token in reversed(self.shared_tokens):
             if token.predicate():
                 return False
             else:
                 if following_span.find_right(token):
                     return True
+                if token.lex == u'такой' and following_span.tokens[0].lex == u'как':
+                    return True
 
     def find_right(self, token_left):
-        for token in self.tokens:
+        # print u'******************'
+        for token in self.shared_tokens:
+            # print token.content, token_left.content
             if token.predicate():
                 return False
             else:
                 if len(token.pos) > 4 and len(token_left.pos) > 4:
                     if token.pos[0] == u'N' and token_left.pos[0] == u'N':
                         if token.pos[4] == token_left.pos[4]:
+                            # print token.content, token_left.content
                             return True
                     elif token.pos[0] == u'A' and token_left.pos[0] == u'A':
                         if token.pos[5] == token_left.pos[5]:
@@ -580,16 +611,17 @@ class Span:
                 return True
 
     def accept_embedded(self, other):
-        if self.inside_quotes is other.inside_quotes:
-            if self.embedded_type == u'gerund' or self.embedded_type == u'participle':
-                return not other.finite() and not other.nominative()
-            elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
-                if not(self.finite() and other.finite()):  # and not(self.nominative() and other.nominative()):
-                    return not other.begin_with_and()
-                else:
-                    return False
-        else:
-            return False
+        # if self.inside_quotes is other.inside_quotes:
+        if self.embedded_type == u'gerund' or self.embedded_type == u'participle':
+            return not other.finite() and not other.nominative()
+        elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
+            # print self.finite(), other.finite(), 111, other.tokens[0].content
+            if not(self.finite() and other.finite()):
+                return not other.begin_with_and()
+            else:
+                return False
+        # else:
+        #     return False
 
     def begin_with_and(self):
         return self.tokens[0].lex == u'и'
