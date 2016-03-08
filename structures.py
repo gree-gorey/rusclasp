@@ -2,17 +2,17 @@
 
 import os
 import re
-import codecs
-import json
 import copy
+import json
+import codecs
 import shutil
-from pymystem3 import Mystem
 import treetaggerwrapper
+# from pymystem3 import Mystem
 
 __author__ = u'Gree-gorey'
 
-m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 t = treetaggerwrapper.TreeTagger(TAGLANG=u'ru')
+# m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
 prepositions = json.load(codecs.open(u'./data/prepositions.json', u'r', u'utf-8'))
 complimentizers = json.load(codecs.open(u'./data/complimentizers.json', u'r', u'utf-8'))
@@ -428,9 +428,39 @@ class Sentence:
                             break
 
     def restore_base(self):
-        for i, span in enumerate(self.spans):
+        for i, span in reversed(list(enumerate(self.spans))):
             if not span.embedded and not span.in_embedded and not span.in_base and not span.inserted:
-                span.base = True
+                span.basic = True
+                if not span.finite():
+                    continue
+                else:
+                    span.base = True
+                    span.in_base = True
+                    last_added = i
+                    last_connected = i
+                    for j, following_span in enumerate(self.spans[i+1::], start=i+1):
+                        if following_span.basic and not following_span.in_base and not following_span.base:
+                            if j != last_added + 1:
+
+                                # если это НЕ непосредственно следующий за последним присоединённым спаном
+                                if j != last_connected + 1:
+                                    span.shared_tokens += following_span.tokens
+                                    following_span.in_base = True
+                                    self.relations.append((last_connected, j))
+                                    last_connected = j
+
+                                else:
+                                    self.spans[last_connected].tokens += following_span.tokens
+                                    following_span.in_base = True
+
+                            else:
+                                span.tokens += following_span.tokens
+                                span.shared_tokens += following_span.tokens
+                                following_span.in_base = True
+                                last_added = j
+
+                        elif following_span.base:
+                            break
 
     def split_embedded(self):
         new_spans = []
@@ -547,6 +577,7 @@ class Span:
         self.embedded_type = None
         self.base = False
         self.in_base = False
+        self.basic = False
         self.inserted = False
         self.indicative = False
         self.gerund = 0
@@ -622,8 +653,12 @@ class Span:
             if self.tokens[0].pos[0] in u'CP':
                 # print self.tokens[0].content
                 if self.tokens[0].lex in complimentizers:
-                    self.embedded_type = u'complement'
-                    return True
+                    if self.tokens[0].lex == u'как':
+                        if self.finite():
+                            return True
+                    else:
+                        self.embedded_type = u'complement'
+                        return True
             elif re.match(u'V.p.......', self.tokens[0].pos):
                 if not self.finite():
                     self.embedded_type = u'participle'
