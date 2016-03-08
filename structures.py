@@ -434,33 +434,40 @@ class Sentence:
                 if not span.finite():
                     continue
                 else:
-                    span.base = True
-                    span.in_base = True
-                    last_added = i
-                    last_connected = i
-                    for j, following_span in enumerate(self.spans[i+1::], start=i+1):
-                        if following_span.basic and not following_span.in_base and not following_span.base:
-                            if j != last_added + 1:
+                    self.join_base(span, i)
 
-                                # если это НЕ непосредственно следующий за последним присоединённым спаном
-                                if j != last_connected + 1:
-                                    span.shared_tokens += following_span.tokens
-                                    following_span.in_base = True
-                                    self.relations.append((last_connected, j))
-                                    last_connected = j
+        for i, span in enumerate(self.spans):
+            if span.basic and not span.base and not span.in_base:
+                self.join_base(span, i, False)
 
-                                else:
-                                    self.spans[last_connected].tokens += following_span.tokens
-                                    following_span.in_base = True
+    def join_base(self, span, i, backward=True):
+        span.base = True
+        span.in_base = True
+        last_added = i
+        last_connected = i
+        for j, following_span in enumerate(self.spans[i+1::], start=i+1):
+            if following_span.basic and not (following_span.in_base and backward) and not (following_span.base and backward):
+                if j != last_added + 1:
 
-                            else:
-                                span.tokens += following_span.tokens
-                                span.shared_tokens += following_span.tokens
-                                following_span.in_base = True
-                                last_added = j
+                    # если это НЕ непосредственно следующий за последним присоединённым спаном
+                    if j != last_connected + 1:
+                        span.shared_tokens += following_span.tokens
+                        following_span.in_base = True
+                        self.relations.append((last_connected, j))
+                        last_connected = j
 
-                        elif following_span.base:
-                            break
+                    else:
+                        self.spans[last_connected].tokens += following_span.tokens
+                        following_span.in_base = True
+
+                else:
+                    span.tokens += following_span.tokens
+                    span.shared_tokens += following_span.tokens
+                    following_span.in_base = True
+                    last_added = j
+
+            if following_span.base:
+                break
 
     def split_embedded(self):
         new_spans = []
@@ -709,6 +716,8 @@ class Span:
     def finite(self):
         for token in self.shared_tokens:
             if re.match(u'(V.[imc].......)|(V.p....ps.)|(A.....s)', token.pos):
+                return True
+            elif re.match(u'V.n.......', token.pos) and self.shared_tokens[0].lex == u'чтобы':
                 return True
             if token.lex in predicates:
                 return True
