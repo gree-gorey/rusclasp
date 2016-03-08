@@ -44,7 +44,7 @@ def create(type_of):
                 result[line[0]] = line[1].split(u',')
     return var[type_of] + u'.json', result
 
-name, res = create(5)
+name, res = create(2)
 
 w = codecs.open(name, u'w', u'utf-8')
 json.dump(res, w, ensure_ascii=False, indent=2)

@@ -150,7 +150,7 @@ class Text:
             elif token[u'lex'] in u'()':
                 self.sentences[-1].tokens[-1].pos = u'pairCOMMA'
                 self.sentences[-1].tokens[-1].lex = u'|'
-            elif token[u'lex'] in u'"':
+            elif token[u'lex'] in u'\'':
                 self.sentences[-1].tokens[-1].pos = u'QUOTE'
             else:
                 self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
@@ -244,6 +244,7 @@ class Text:
         shutil.copy(ann, u'/opt/brat-v1.3_Crunchy_Frog/data/right/' + ann.split(u'/')[-1])
 
     def normalize(self):
+        self.result = self.result.replace(u' ', u' ')
         self.result = self.result.replace(u'\r\n', u' ')
         self.result = self.result.replace(u'\n', u' ')
         self.result = self.result.replace(u'…', u'...')
@@ -251,6 +252,8 @@ class Text:
                              flags=re.U)
         self.result = re.sub(u' +', u' ', self.result, flags=re.U)
         self.result = re.sub(u' $', u'', self.result, flags=re.U)
+        self.result = re.sub(u'[\'«»‘’]', u'"', self.result, flags=re.U)
+        self.result = re.sub(u'\"(.+?)\"(, —)', u'"\\1"\\2', self.result, flags=re.U)
         with codecs.open(self.path, u'w', u'utf-8') as w:
             w.write(self.result)
 
@@ -286,6 +289,7 @@ class Sentence:
 
     def span_off(self):
         if self.span:
+            # print self.spans[-1].tokens[-1].content
             self.span = False
             if self.spans[-1].tokens[-1].content in u';()':
                 self.spans[-1].semicolon = True
@@ -306,6 +310,7 @@ class Sentence:
                 else:
                     self.quotes = False
             if token.end_of_span():
+                # print token.content
                 self.span_off()
             # elif token.content != u'\"':
             #     self.span_on()
@@ -313,7 +318,7 @@ class Sentence:
 
     def eliminate_pair_comma(self):
         predicate = False
-        begin = {u'—': False, u'|': False}
+        begin = {u'—': False, u'|': False, u'"': False}
         end = False
         left = right = None
         for i, token in enumerate(self.tokens):
@@ -431,9 +436,11 @@ class Sentence:
         for i, span in reversed(list(enumerate(self.spans))):
             if not span.embedded and not span.in_embedded and not span.in_base and not span.inserted:
                 span.basic = True
+                # print span.tokens[0].content, span.finite()
                 if not span.finite():
                     continue
                 else:
+                    # print span.tokens[0].content
                     self.join_base(span, i)
 
         for i, span in enumerate(self.spans):
@@ -450,7 +457,6 @@ class Sentence:
 
                 if j != last_added + 1:
 
-                    # если это НЕ непосредственно следующий за последним присоединённым спаном
                     if j != last_connected + 1:
                         span.shared_tokens += following_span.tokens
                         following_span.in_base = True
@@ -463,6 +469,7 @@ class Sentence:
                         following_span.in_base = True
 
                 else:
+                    # print following_span.tokens[0].content, backward
                     span.tokens += following_span.tokens
                     span.shared_tokens += following_span.tokens
                     following_span.in_base = True
@@ -717,7 +724,9 @@ class Span:
 
     def finite(self):
         for token in self.shared_tokens:
+            # print token.pos, token.content, 777
             if re.match(u'(V.[imc].......)|(V.p....ps.)|(A.....s)', token.pos):
+                # print self.shared_tokens[0].content
                 return True
             elif re.match(u'V.n.......', token.pos) and self.shared_tokens[0].lex == u'чтобы':
                 return True

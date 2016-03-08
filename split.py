@@ -28,6 +28,9 @@ for text in newCorpus.texts(u'json'):
 
         sentence.eliminate_pair_comma()
 
+        # for token in sentence.tokens:
+        #     print token.pos, token.content
+
         sentence.span_splitter()
 
         sentence.get_shared_tokens()  # loop through all the spans 1
@@ -50,7 +53,7 @@ for text in newCorpus.texts(u'json'):
 
         for span in sentence.spans:
             span.get_boundaries()
-            # print span.basic, span.tokens[0].content
+            # print span.basic, span.tokens[-1].content
 
     text.write_clause_ann()
 
