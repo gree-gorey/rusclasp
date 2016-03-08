@@ -447,12 +447,14 @@ class Sentence:
         last_connected = i
         for j, following_span in enumerate(self.spans[i+1::], start=i+1):
             if following_span.basic and not (following_span.in_base and backward) and not (following_span.base and backward):
+
                 if j != last_added + 1:
 
                     # если это НЕ непосредственно следующий за последним присоединённым спаном
                     if j != last_connected + 1:
                         span.shared_tokens += following_span.tokens
                         following_span.in_base = True
+                        following_span.base = True
                         self.relations.append((last_connected, j))
                         last_connected = j
 
@@ -752,8 +754,8 @@ class Token:
         self.in_np = False
 
     def coordinate(self, other):
-        pos = zip(self.pos, other.pos)[1:3:] + zip(self.pos, other.pos)[4:7:]
-        # print pos
+        # pos = zip(self.pos, other.pos)[1:3:] + zip(self.pos, other.pos)[4:7:]  # без учета времени
+        pos = zip(self.pos, other.pos)[1:7:]
         for item in pos:
             if u'-' in item:
                 pass

@@ -38,7 +38,7 @@ for text in newCorpus.texts(u'json'):
 
             # decide whether span is inserted or embedded or neither
             span.type()
-            # print span.tokens[0].content, span.tokens[0].pos
+            # print span.tokens[0].content, span.inserted
 
         # split embedded span if it contains > 1 predicate
         sentence.split_embedded()
@@ -50,7 +50,7 @@ for text in newCorpus.texts(u'json'):
 
         for span in sentence.spans:
             span.get_boundaries()
-            # print span.base, span.tokens[0].content
+            # print span.basic, span.tokens[0].content
 
     text.write_clause_ann()
 
