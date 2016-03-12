@@ -31,12 +31,11 @@ class Corpus:
             for filename in files:
                 if extension in filename:
                     open_name = self.path + filename
-                    f = codecs.open(open_name, u'r', u'utf-8')
-                    if extension == u'json':
-                        result = json.load(f)
-                    else:
-                        result = f.read()
-                    f.close()
+                    with codecs.open(open_name, u'r', u'utf-8') as f:
+                        if extension == u'json':
+                            result = json.load(f)
+                        else:
+                            result = f.read()
                     yield Text(result, open_name)
 
 # /home/gree-gorey/Corpus/
@@ -453,29 +452,36 @@ class Sentence:
         last_added = i
         last_connected = i
         for j, following_span in enumerate(self.spans[i+1::], start=i+1):
+            # print span.tokens[0].content, following_span.tokens[0].content, 111
             if following_span.basic and not (following_span.in_base and backward) and not (following_span.base and backward):
+                # print span.tokens[0].content, following_span.tokens[0].content
 
                 if j != last_added + 1:
 
                     if j != last_connected + 1:
-                        span.shared_tokens += following_span.tokens
-                        following_span.in_base = True
-                        following_span.base = True
-                        self.relations.append((last_connected, j))
-                        last_connected = j
+                        if span.accept_base(following_span):
+                            span.shared_tokens += following_span.tokens
+                            following_span.in_base = True
+                            following_span.base = True
+                            self.relations.append((last_connected, j))
+                            last_connected = j
 
                     else:
-                        self.spans[last_connected].tokens += following_span.tokens
-                        following_span.in_base = True
+                        if span.accept_base(following_span) and span.coordinate(following_span):
+                            self.spans[last_connected].tokens += following_span.tokens
+                            following_span.in_base = True
 
                 else:
-                    # print following_span.tokens[0].content, backward
-                    span.tokens += following_span.tokens
-                    span.shared_tokens += following_span.tokens
-                    following_span.in_base = True
-                    last_added = j
+                    if span.accept_base(following_span) and span.coordinate(following_span):
+                        # print following_span.tokens[0].content, backward
+                        span.tokens += following_span.tokens
+                        span.shared_tokens += following_span.tokens
+                        following_span.in_base = True
+                        last_added = j
 
-            if following_span.base:
+            # if following_span.base:
+            #     break
+            if span.finite():
                 break
 
     def split_embedded(self):
@@ -610,7 +616,7 @@ class Span:
                     if token.pos[0] == u'V' and other_token.pos[0] == u'V':
                         # print token.content
                         if token.coordinate(other_token):
-                            # print token.content
+                            # print token.content, other_token.content
                             return True
 
     def coordinate(self, following_span):
@@ -701,17 +707,23 @@ class Span:
                 return True
 
     def accept_embedded(self, other):
-        # if self.inside_quotes is other.inside_quotes:
-        if self.embedded_type == u'gerund' or self.embedded_type == u'participle':
-            return not other.finite() and not other.nominative()
-        elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
-            # print self.finite(), other.finite(), 111, other.tokens[0].content
-            if not(self.finite() and other.finite()):
-                return not other.begin_with_and()
-            else:
-                return False
-        # else:
-        #     return False
+        if self.inside_quotes is other.inside_quotes:
+            if self.embedded_type == u'gerund' or self.embedded_type == u'participle':
+                return not other.finite() and not other.nominative()
+            elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
+                # print self.finite(), other.finite(), 111, other.tokens[0].content
+                if not(self.finite() and other.finite()):
+                    return not other.begin_with_and()
+                else:
+                    return False
+        else:
+            return False
+
+    def accept_base(self, other):
+        if self.inside_quotes is other.inside_quotes:
+            return True
+        else:
+            return False
 
     def begin_with_and(self):
         return self.tokens[0].lex == u'и'
@@ -733,11 +745,6 @@ class Span:
             if token.lex in predicates:
                 return True
         return False
-
-    def accept_base(self):
-        for token in self.tokens:
-            if u'V' in token.pos:
-                return True
 
     def get_boundaries(self):
         if self.tokens[0].content == u'\"':
@@ -764,7 +771,7 @@ class Token:
 
     def coordinate(self, other):
         # pos = zip(self.pos, other.pos)[1:3:] + zip(self.pos, other.pos)[4:7:]  # без учета времени
-        pos = zip(self.pos, other.pos)[1:7:]
+        pos = zip(self.pos, other.pos)[1:7:] + zip(self.pos, other.pos)[8:9:]
         for item in pos:
             if u'-' in item:
                 pass
