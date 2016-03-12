@@ -657,7 +657,7 @@ class Span:
 
     def is_inserted(self):
         if len(self.tokens) < 10:
-            if self.tokens[0].lex == u'по':
+            if self.tokens[0].lex in [u'по', u'на']:
                 if len(self.tokens) > 2:
                     if self.tokens[1].content in inserted_evidence or self.tokens[2].content in inserted_evidence:
                         return True
