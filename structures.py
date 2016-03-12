@@ -481,7 +481,7 @@ class Sentence:
 
             # if following_span.base:
             #     break
-            if span.finite():
+            if span.finite() and following_span.base:
                 break
 
     def split_embedded(self):
@@ -610,14 +610,15 @@ class Span:
         # self.finite = False
 
     def predicate_coordination(self, following_span):
-        for token in self.shared_tokens:
-            if token.predicate():
-                for other_token in following_span.tokens:
-                    if token.pos[0] == u'V' and other_token.pos[0] == u'V':
-                        # print token.content
-                        if token.coordinate(other_token):
-                            # print token.content, other_token.content
-                            return True
+        if not(self.nominative() and following_span.nominative()):
+            for token in self.shared_tokens:
+                if token.predicate():
+                    for other_token in following_span.tokens:
+                        if token.pos[0] == u'V' and other_token.pos[0] == u'V':
+                            # print token.content
+                            if token.coordinate(other_token):
+                                # print token.content, other_token.content
+                                return True
 
     def coordinate(self, following_span):
         if self.before_dash:
@@ -730,7 +731,7 @@ class Span:
 
     def nominative(self):
         for token in self.shared_tokens:
-            if re.match(u'(N...n.)|(P....n.)', token.pos):
+            if re.match(u'(N...n.)|(P....n.)|(M...[n-])', token.pos):
                 return True
         return False
 
