@@ -290,11 +290,18 @@ class Sentence:
         if self.span:
             # print self.spans[-1].tokens[-1].content
             self.span = False
-            if self.spans[-1].tokens[-1].content in u';()':
-                self.spans[-1].semicolon = True
+            if self.spans[-1].tokens[-1].content:
+                if self.spans[-1].tokens[-1].content in u';()':
+                    self.spans[-1].semicolon = True
             elif self.spans[-1].tokens[-1].content == u'—':
                 self.spans[-1].before_dash = True
-            self.spans[-1].tokens.pop()
+
+            if self.spans[-1].tokens[0].lex == u'—':
+                self.spans[-1].tokens.pop(0)
+
+            if len(self.spans[-1].tokens) > 0:
+                self.spans[-1].tokens.pop()
+
             if len(self.spans[-1].tokens) < 1:
                 self.spans.pop()
 
@@ -371,18 +378,21 @@ class Sentence:
     def restore_embedded(self):
         for i, span in reversed(list(enumerate(self.spans))):
             if span.embedded:
+                # print span.tokens[0].content, span.semicolon
                 if not span.semicolon:
+                    # print span.tokens[0].content
                     last_added = i
                     last_connected = i
                     last_connected_verb = i
                     for j, following_span in enumerate(self.spans[i+1::], start=i+1):
-                        # print u' '.join([token.content for token in span.tokens])
+                        # print span.tokens[0].content, following_span.tokens[0].content
                         if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
 
                             if span.predicate_coordination(following_span):
                                 # print following_span.tokens[0].content
                                 # print last_connected, j
                                 following_span.embedded = True
+                                span.before_dash += following_span.before_dash
                                 following_span.embedded_type = span.embedded_type
                                 self.verb_relations.append((last_connected_verb, j))
                                 last_connected_verb = j
@@ -396,6 +406,7 @@ class Sentence:
                                     if j != last_connected + 1:
                                         if span.accept_embedded(following_span):
                                             span.shared_tokens += following_span.tokens
+                                            span.before_dash += following_span.before_dash
                                             following_span.embedded = True
                                             following_span.embedded_type = span.embedded_type
                                             self.relations.append((last_connected, j))
@@ -409,6 +420,7 @@ class Sentence:
                                         # проверка на сочинение!
                                         if span.accept_embedded(following_span):
                                             self.spans[last_connected].tokens += following_span.tokens
+                                            span.before_dash += following_span.before_dash
                                             following_span.in_embedded = True
                                             last_added = j
                                             # span.semicolon = following_span.semicolon
@@ -420,6 +432,7 @@ class Sentence:
                                     # проверка на сочинение!
                                     # print span.accept_embedded(following_span), span.coordinate(following_span)
                                     if span.accept_embedded(following_span) and span.coordinate(following_span):
+                                        span.before_dash += following_span.before_dash
                                         span.tokens += following_span.tokens
                                         span.shared_tokens += following_span.tokens
                                         following_span.in_embedded = True
@@ -454,28 +467,39 @@ class Sentence:
         for j, following_span in enumerate(self.spans[i+1::], start=i+1):
             # print span.tokens[0].content, following_span.tokens[0].content, 111
             if following_span.basic and not (following_span.in_base and backward) and not (following_span.base and backward):
-                # print span.tokens[0].content, following_span.tokens[0].content
+                # print span.tokens[0].content, following_span.tokens[0].content, 555, j
 
+                # если это НЕ примыкающий спан!!!
                 if j != last_added + 1:
+                    # print span.tokens[0].content, following_span.tokens[0].content, 555, j
 
                     if j != last_connected + 1:
                         if span.accept_base(following_span):
                             span.shared_tokens += following_span.tokens
+                            span.before_dash += following_span.before_dash
                             following_span.in_base = True
                             following_span.base = True
                             self.relations.append((last_connected, j))
                             last_connected = j
 
+                    # если это ПРИМЫКАЮЩИЙ к висящему куску спан!!!
                     else:
+                        # print span.tokens[0].content, following_span.tokens[0].content, span.accept_base(following_span), span.coordinate(following_span)
                         if span.accept_base(following_span) and span.coordinate(following_span):
+                            # print span.tokens[0].content, following_span.tokens[0].content
                             self.spans[last_connected].tokens += following_span.tokens
+                            span.before_dash += following_span.before_dash
                             following_span.in_base = True
 
+                # если это ПРИМЫКАЮЩИЙ спан!!!
                 else:
+                    # print span.tokens[0].content, following_span.tokens[0].content, span.accept_base(following_span), span.coordinate(following_span)
                     if span.accept_base(following_span) and span.coordinate(following_span):
+                        # print span.tokens[0].content, following_span.tokens[0].content, 777, j
                         # print following_span.tokens[0].content, backward
                         span.tokens += following_span.tokens
                         span.shared_tokens += following_span.tokens
+                        span.before_dash += following_span.before_dash
                         following_span.in_base = True
                         last_added = j
 
@@ -618,9 +642,12 @@ class Span:
                             # print token.content
                             if token.coordinate(other_token):
                                 # print token.content, other_token.content
-                                return True
+                                return self.finite() is following_span.finite()
+                                # return True
 
     def coordinate(self, following_span):
+        if following_span.tokens[0].lex == u'в первую очередь':
+            return True
         if self.before_dash:
             return True
         for token in reversed(self.shared_tokens):
