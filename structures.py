@@ -96,11 +96,13 @@ class Text:
             self.sentence_on()
             self.add_token(result) if i == len(self.result)-1 else self.add_token(result, self.result[i+1])
             if self.end_of_sentence():
+                # print self.result[i-1]['lex']
                 self.sentence_off()
         self.sentence_off()
 
     def end_of_sentence(self):
         if self.sentences[-1].tokens[-1].pos == u'PERIOD':  # if it is a period
+            # print 1
             if self.sentences[-1].tokens[-1].next_token_title:  # if the next token is uppercase
                 # print 1
                 if self.sentences[-1].tokens[-1].after_abbreviation:  # if the previous one is abbreviation
@@ -164,7 +166,9 @@ class Text:
         if self.sentences[-1].after_abbreviation:
             self.sentences[-1].tokens[-1].after_abbreviation = True
         if next_token is not None:
-            if next_token[u'text'].istitle() or next_token[u'text'] == u'\"':
+            # print next_token[u'text']
+            if next_token[u'text'].replace(u'-', u'').istitle() or next_token[u'text'] == u'\"':
+                # print next_token[u'text']
                 self.sentences[-1].tokens[-1].next_token_title = True
                 if next_token[u'gr'][0] == u'N':
                     if next_token[u'gr'][1] == u'p':
@@ -298,6 +302,9 @@ class Sentence:
                 elif self.spans[-1].tokens[-1].content == u'—':
                     # print 1
                     self.spans[-1].before_dash = True
+                elif self.spans[-1].tokens[-1].content == u':':
+                    # print 1
+                    self.spans[-1].before_colon = True
 
             if self.spans[-1].tokens[0].lex == u'—':
                 self.spans[-1].tokens.pop(0)
@@ -459,10 +466,8 @@ class Sentence:
 
     def restore_base(self):
         for i, span in reversed(list(enumerate(self.spans))):
-            # if not span.embedded and not span.in_embedded and not span.in_base and not span.inserted:
-            #     span.basic = True
             if span.basic:
-                # print span.tokens[1].content, span.finite()
+                # print span.tokens[0].content, span.finite()
                 if not span.finite():
                     continue
                 else:
@@ -471,6 +476,7 @@ class Sentence:
 
         for i, span in enumerate(self.spans):
             if span.basic and not span.base and not span.in_base:
+                # print span.tokens[3].content
                 self.join_base(span, i, False)
 
     def join_base(self, span, i, backward=True):
@@ -547,7 +553,7 @@ class Sentence:
                                         self.new_spans[-1].tokens = span.tokens[:i:]
                                         self.new_spans.append(new_span)
                                         break
-                elif span.embedded_type == u'relative':
+                else:
                     find += self.find_coordination(span)
 
         if find:
@@ -587,8 +593,7 @@ class Sentence:
     def find_complimentizers(self):
         for i, token in enumerate(self.tokens):
             if token.content.lower() in complex_complimentizers:
-                # print token.lex
-                end = i + complex_complimentizers[token.lex][1]
+                end = i + complex_complimentizers[token.content.lower()][1]
                 if len(self.tokens) >= end + 1:
                     new = [token]
                     j = i
@@ -598,7 +603,7 @@ class Sentence:
                             new.append(self.tokens[j])
                     new_complimentizer = u' '.join([next_token.content.lower() for next_token in new])
                     # print new_complimentizer_lex, 2
-                    if new_complimentizer == complex_complimentizers[token.lex][0]:
+                    if new_complimentizer == complex_complimentizers[token.content.lower()][0]:
                         token.content = new_complimentizer
                         token.lex = new_complimentizer
                         token.pos = u'C'
@@ -679,11 +684,19 @@ class Span:
         self.inside_quotes = False
         self.semicolon = False
         self.before_dash = False
+        self.before_colon = False
+        self.complement_type = None
         # self.finite = False
 
     def predicate_coordination(self, following_span):
-        print self.shared_tokens[1].content, self.nominative(), following_span.nominative(), following_span.shared_tokens[0].content
+        # print self.shared_tokens[1].content, self.nominative(), following_span.nominative(), following_span.shared_tokens[0].content
         if not(self.nominative() and following_span.nominative()):
+            if self.embedded_type and following_span.embedded_type:
+                if self.embedded_type != following_span.embedded_type:
+                    return False
+                if self.embedded_type == u'complement':
+                    if self.complement_type != following_span.complement_type:
+                        return False
             for token in self.shared_tokens:
                 if token.predicate():
                     # print token.content
@@ -698,7 +711,7 @@ class Span:
     def coordinate(self, following_span):
         if following_span.tokens[0].lex == u'в первую очередь' or following_span.tokens[0].lex == u'включая':
             return True
-        if self.before_dash:
+        if self.before_dash or self.before_colon:
             return True
         for token in reversed(self.shared_tokens):
             if token.predicate():
@@ -755,9 +768,12 @@ class Span:
                 if self.tokens[0].lex in complimentizers:
                     if self.tokens[0].lex == u'как':
                         if self.finite():
+                            self.embedded_type = u'complement'
+                            self.complement_type = self.tokens[0].lex
                             return True
                     else:
                         self.embedded_type = u'complement'
+                        self.complement_type = self.tokens[0].lex
                         return True
 
             for token in self.tokens:
@@ -815,9 +831,8 @@ class Span:
         return False
 
     def finite(self):
-        # if self.tokens[1].content == u'Партией':
-        #     print 1
-        for token in self.shared_tokens:
+        nominative = 0
+        for i, token in enumerate(self.shared_tokens):
             # print u' '.join([token.content for token in self.shared_tokens])
             # print token.pos, token.content, 777
             if re.match(u'(V.[imc].......)|(V.p....ps.)|(A.....s)', token.pos):
@@ -829,7 +844,15 @@ class Span:
             if token.lex in predicates:
                 # print self.shared_tokens[0].content
                 return True
+            if re.match(u'(N...n.)|(P....n.)|(M...[n-])', token.pos):
+                nominative += 1
+                if len(self.shared_tokens[i+1::]) > 1:
+                    if self.shared_tokens[i+1].lex == u'не':
+                        if self.shared_tokens[i+2].pos[0] in u'NS':
+                            return True
         # print u' '.join([token.content for token in self.shared_tokens])
+        # if nominative > 1:
+        #     return True
         return False
 
     def get_boundaries(self):

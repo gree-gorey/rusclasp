@@ -13,6 +13,7 @@ for text in newCorpus.texts(u'json'):
     text.sentence_splitter()
     # print len(text.sentences)
     for sentence in text.sentences:
+        # print sentence.tokens[0].content
 
         # for token in sentence.tokens:
         #     print token.pos, token.content
