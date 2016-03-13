@@ -46,6 +46,9 @@ for text in newCorpus.texts(u'json'):
         # split embedded span if it contains > 1 predicate
         sentence.split_embedded()
 
+        # for span in sentence.spans:
+        #     print span.shared_tokens[0].content, span.tokens[0].content
+
         # walk through spans and join whenever possible
         sentence.restore_embedded()
 

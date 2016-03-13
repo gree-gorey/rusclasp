@@ -295,8 +295,9 @@ class Sentence:
             if self.spans[-1].tokens[-1].content:
                 if self.spans[-1].tokens[-1].content in u';()':
                     self.spans[-1].semicolon = True
-            elif self.spans[-1].tokens[-1].content == u'—':
-                self.spans[-1].before_dash = True
+                elif self.spans[-1].tokens[-1].content == u'—':
+                    # print 1
+                    self.spans[-1].before_dash = True
 
             if self.spans[-1].tokens[0].lex == u'—':
                 self.spans[-1].tokens.pop(0)
@@ -370,10 +371,11 @@ class Sentence:
         for span in self.spans:
             if len(span.tokens) > 1:
                 if span.tokens[0].pos == u'C' and span.tokens[1].pos == u'C':
-                    new_span = Span()
-                    new_span.tokens += span.tokens[:1:]
-                    span.tokens.pop(0)
-                    new.append(new_span)
+                    if span.tokens[0].lex in complimentizers and span.tokens[1].lex in complimentizers:
+                        new_span = Span()
+                        new_span.tokens += span.tokens[:1:]
+                        span.tokens.pop(0)
+                        new.append(new_span)
             new.append(span)
         self.spans = copy.deepcopy(new)
 
@@ -442,6 +444,15 @@ class Sentence:
                                         # span.semicolon = following_span.semicolon
                                     else:
                                         break
+
+                        elif following_span.embedded:
+                            if span.predicate_coordination(following_span):
+                                # print following_span.tokens[0].content
+                                # print last_connected, j
+                                span.before_dash += following_span.before_dash
+                                following_span.embedded_type = span.embedded_type
+                                self.verb_relations.append((last_connected_verb, j))
+                                last_connected_verb = j
 
                         if following_span.semicolon:
                             break
@@ -512,32 +523,35 @@ class Sentence:
                 break
 
     def split_embedded(self):
-        new_spans = []
+        find = False
         for span in self.spans:
-            new_spans.append(span)
-            find_coordination = False
+            self.new_spans.append(span)
             if span.embedded:
-                if span.embedded_type == u'gerund' or span.embedded_type == u'relative':
-                    if span.gerund > 1 or span.relative > 0:
+                find_gerund = False
+                if span.embedded_type == u'gerund':
+                    if span.gerund > 1:
                         for i, token in reversed(list(enumerate(span.tokens))):
                             if len(token.pos) > 2:
                                 if token.pos[0] == u'V':
                                     if token.pos[2] == u'g':
-                                        find_coordination = True
-                                elif token.lex == u'который':
-                                    find_coordination = True
+                                        find_gerund = True
+                                        find += True
                             elif token.lex == u'и':
-                                if find_coordination:
+                                if find_gerund:
                                     if i > 0:
                                         new_span = Span()
                                         new_span.embedded = True
                                         new_span.embedded_type = span.embedded_type
                                         for following_token in span.tokens[i::]:
                                             new_span.tokens.append(following_token)
-                                        new_spans[-1].tokens = span.tokens[:i:]
-                                        new_spans.append(new_span)
+                                        self.new_spans[-1].tokens = span.tokens[:i:]
+                                        self.new_spans.append(new_span)
                                         break
-        self.spans = copy.deepcopy(new_spans)
+                elif span.embedded_type == u'relative':
+                    find += self.find_coordination(span)
+
+        if find:
+            self.spans = copy.deepcopy(self.new_spans)
 
     def split_base(self):
         find = False
@@ -555,6 +569,8 @@ class Sentence:
             if token.lex == u'и':
                 if i > 0:
                     for j, following_token in enumerate(span.tokens[i+1::], start=i+1):
+                        if following_token.lex == u'который':
+                            continue
                         if following_token.predicate():
                             new_span = copy.deepcopy(span)
                             new_span.tokens = span.tokens[i::]
@@ -666,19 +682,21 @@ class Span:
         # self.finite = False
 
     def predicate_coordination(self, following_span):
+        print self.shared_tokens[1].content, self.nominative(), following_span.nominative(), following_span.shared_tokens[0].content
         if not(self.nominative() and following_span.nominative()):
             for token in self.shared_tokens:
                 if token.predicate():
+                    # print token.content
                     for other_token in following_span.tokens:
-                        if token.pos[0] == u'V' and other_token.pos[0] == u'V':
+                        # if token.pos[0] == u'V' and other_token.pos[0] == u'V':
                             # print token.content
-                            if token.coordinate(other_token):
-                                # print token.content, other_token.content
-                                return self.finite() is following_span.finite()
-                                # return True
+                        if token.coordinate(other_token):
+                            # print token.content, other_token.content
+                            return self.finite() is following_span.finite()
+                            # return True
 
     def coordinate(self, following_span):
-        if following_span.tokens[0].lex == u'в первую очередь':
+        if following_span.tokens[0].lex == u'в первую очередь' or following_span.tokens[0].lex == u'включая':
             return True
         if self.before_dash:
             return True
@@ -741,15 +759,7 @@ class Span:
                     else:
                         self.embedded_type = u'complement'
                         return True
-            elif re.match(u'V.p.......', self.tokens[0].pos):
-                if not self.finite():
-                    self.embedded_type = u'participle'
-                    return True
-            elif self.tokens[0].pos in u'QR' and len(self.tokens) > 1:
-                if re.match(u'V.p.......', self.tokens[1].pos):
-                    if not self.finite():
-                        self.embedded_type = u'participle'
-                        return True
+
             for token in self.tokens:
                 if token.lex == u'который':
                     self.relative += 1
@@ -765,6 +775,14 @@ class Span:
             elif self.relative > 0:
                 self.embedded_type = u'relative'
                 return True
+
+            for token in self.tokens:
+                if token.pos[0] in u'CQR':
+                    continue
+                elif re.match(u'V.p.......', token.pos):
+                    if not self.finite():
+                        self.embedded_type = u'participle'
+                        return True
 
     def accept_embedded(self, other):
         if self.inside_quotes is other.inside_quotes:
@@ -789,8 +807,10 @@ class Span:
         return self.tokens[0].lex == u'и'
 
     def nominative(self):
+        # print self.shared_tokens[1].content, 777
         for token in self.shared_tokens:
             if re.match(u'(N...n.)|(P....n.)|(M...[n-])', token.pos):
+                # print token.content
                 return True
         return False
 
@@ -838,7 +858,12 @@ class Token:
 
     def coordinate(self, other):
         # pos = zip(self.pos, other.pos)[1:3:] + zip(self.pos, other.pos)[4:7:]  # без учета времени
-        pos = zip(self.pos, other.pos)[1:7:] + zip(self.pos, other.pos)[8:9:]
+        if self.pos[0] == u'V':
+            pos = zip(self.pos, other.pos)[1:7:] + zip(self.pos, other.pos)[8:9:]
+        elif self.pos[0] == u'A':
+            # print self.content, other.content
+            pos = zip(self.pos, other.pos)
+            # print pos
         for item in pos:
             if u'-' in item:
                 pass
