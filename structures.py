@@ -709,7 +709,7 @@ class Span:
                             # return True
 
     def coordinate(self, following_span):
-        if following_span.tokens[0].lex == u'в первую очередь' or following_span.tokens[0].lex == u'включая':
+        if following_span.tokens[0].lex == u'в первую очередь' or following_span.tokens[0].lex == u'включая' or following_span.tokens[0].lex == u'где-то':
             return True
         if self.before_dash or self.before_colon:
             return True
@@ -723,21 +723,12 @@ class Span:
                     return True
 
     def find_right(self, token_left):
-        # print u'******************'
         for token in self.shared_tokens:
             # print token.content, token_left.content
             if token.predicate():
                 return False
             else:
-                if len(token.pos) > 4 and len(token_left.pos) > 4:
-                    if token.pos[0] == u'N' and token_left.pos[0] == u'N':
-                        if token.pos[4] == token_left.pos[4]:
-                            # print token.content, token_left.content
-                            return True
-                    elif token.pos[0] == u'A' and token_left.pos[0] == u'A':
-                        if token.pos[5] == token_left.pos[5]:
-                            return True
-
+                return token.case() == token_left.case()
 
     def type(self):
         if self.is_inserted():
@@ -785,6 +776,11 @@ class Span:
                             self.gerund += 1
                         elif token.pos[2] == u'i':
                             self.indicative = True
+
+            if self.tokens[0].lex == u'какой':
+                self.embedded_type = u'relative'
+                return True
+
             if self.gerund > 0 and not self.indicative:
                 self.embedded_type = u'gerund'
                 return True
@@ -879,11 +875,20 @@ class Token:
         self.in_pp = False
         self.in_np = False
 
+    def case(self):
+        if self.pos[0] == u'N':
+            return self.pos[4]
+        elif self.pos[0] in u'AP':
+            return self.pos[5]
+        return False
+
     def coordinate(self, other):
         # pos = zip(self.pos, other.pos)[1:3:] + zip(self.pos, other.pos)[4:7:]  # без учета времени
-        if self.pos[0] == u'V':
+        if self.pos[0] == other.pos[0] == u'V':
             pos = zip(self.pos, other.pos)[1:7:] + zip(self.pos, other.pos)[8:9:]
-        elif self.pos[0] == u'A':
+            # print pos, self.content
+        # elif self.pos[0] == u'A':
+        else:
             # print self.content, other.content
             pos = zip(self.pos, other.pos)
             # print pos
