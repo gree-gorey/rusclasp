@@ -418,7 +418,7 @@ class Sentence:
 
                             else:
 
-                                # если это НЕ непосредственно следующий за последним поглощённым спаном
+                                # если это НЕ примыкающий спан!!!
                                 if j != last_added + 1:
 
                                     # если это НЕ непосредственно следующий за последним присоединённым спаном
@@ -446,6 +446,7 @@ class Sentence:
                                         else:
                                             break
 
+                                # если это ПРИМЫКАЮЩИЙ спан!!!
                                 else:
                                     # print following_span.tokens[0].content, 777
                                     # проверка на сочинение!
@@ -489,7 +490,7 @@ class Sentence:
                 if not span.finite():
                     continue
                 else:
-                    # print span.tokens[0].content
+                    # print span.tokens[1].content
                     self.join_base(span, i)
 
         for i, span in enumerate(self.spans):
@@ -758,6 +759,8 @@ class Span:
                 return False
             else:
                 if following_span.find_right(token):
+                    # print 777
+                    # print token.lex
                     return True
                 if token.lex == u'такой' and following_span.tokens[0].lex == u'как':
                     return True
@@ -768,7 +771,10 @@ class Span:
             if token.predicate():
                 return False
             else:
-                return token.case() == token_left.case()
+                if token.pos[0] in u'ANP' and token_left.pos[0] in u'ANP':
+                    return token.case() == token_left.case()
+                else:
+                    return False
 
     def type(self):
         if self.is_inserted():
@@ -885,9 +891,10 @@ class Span:
             if token.lex in myData.predicates:
                 # print self.shared_tokens[0].content
                 return True
-            if token.lex in u'-—':
+            if token.lex == u'—' or token.lex == u'-':
+                # print u' '.join([token.content for token in self.shared_tokens]), token.content, token.lex
                 null_copula = True
-            elif token.lex in u'здесь':
+            elif token.lex == u'здесь':
                 null_copula = True
             if re.match(u'(N...n.)|(P....n.)|(M...[n-])', token.pos):
                 nominative += 1
@@ -897,6 +904,7 @@ class Span:
                             return True
         # print u' '.join([token.content for token in self.shared_tokens])
         if nominative > 1 and null_copula:
+            # print u' '.join([token.content for token in self.shared_tokens])
             return True
         return False
 
