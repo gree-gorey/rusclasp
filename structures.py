@@ -24,6 +24,7 @@ class Data:
         self.inserted_evidence = json.load(codecs.open(u'./data/inserted_evidence.json', u'r', u'utf-8'))
         self.complex_complimentizers = json.load(codecs.open(u'./data/complex_complimentizers.json', u'r', u'utf-8'))
         self.specificators = json.load(codecs.open(u'./data/specificators.json', u'r', u'utf-8'))
+        self.conditional_complimentizers = [u'а', u'как', u'то есть']
 
 myData = Data()
 
@@ -70,7 +71,8 @@ class Text:
     def treetagger_analyzer(self):
         # self.result = self.result.replace(u' ', u' ')
         self.result = re.sub(u'["«»‘’]', u'\'', self.result, flags=re.U)
-        self.result = re.sub(u'(^|\. )\'(.+?)\'(, —)', u'\\1"\\2"\\3', self.result, flags=re.U)
+        self.result = re.sub(u'(^|\. )\'(.+?)\'(, ?[—-])', u'\\1"\\2"\\3', self.result, flags=re.U)
+        # print self.result
         self.analysis = myData.t.tag_text(self.result, tagblanks=True)
         # for item in self.analysis:
         #     print item
@@ -173,7 +175,7 @@ class Text:
             self.sentences[-1].tokens[-1].after_abbreviation = True
         if next_token is not None:
             # print next_token[u'text']
-            if next_token[u'text'].replace(u'-', u'').istitle() or next_token[u'text'] == u'\"':
+            if next_token[u'text'].replace(u'-', u'').istitle() or next_token[u'text'] in u'\"\'':
                 # print next_token[u'text']
                 self.sentences[-1].tokens[-1].next_token_title = True
                 if next_token[u'gr'][0] == u'N':
@@ -709,23 +711,24 @@ class Span:
 
     def predicate_coordination(self, following_span):
         # print self.shared_tokens[1].content, self.nominative(), following_span.nominative(), following_span.shared_tokens[0].content
-        if not(self.nominative() and following_span.nominative()):
-            if self.embedded_type and following_span.embedded_type:
-                if self.embedded_type != following_span.embedded_type:
-                    return False
-                if self.embedded_type == u'complement':
-                    if self.complement_type != following_span.complement_type:
+        if self.inside_quotes is following_span.inside_quotes:
+            if not(self.nominative() and following_span.nominative()):
+                if self.embedded_type and following_span.embedded_type:
+                    if self.embedded_type != following_span.embedded_type:
                         return False
-            for token in self.shared_tokens:
-                if token.predicate():
-                    # print token.content
-                    for other_token in following_span.tokens:
-                        # if token.pos[0] == u'V' and other_token.pos[0] == u'V':
-                            # print token.content
-                        if token.coordinate(other_token):
-                            # print token.content, other_token.content
-                            return self.finite() is following_span.finite()
-                            # return True
+                    if self.embedded_type == u'complement':
+                        if self.complement_type != following_span.complement_type:
+                            return False
+                for token in self.shared_tokens:
+                    if token.predicate():
+                        # print token.content
+                        for other_token in following_span.tokens:
+                            # if token.pos[0] == u'V' and other_token.pos[0] == u'V':
+                                # print token.content
+                            if token.coordinate(other_token):
+                                # print token.content, other_token.content
+                                return self.finite() is following_span.finite()
+                                # return True
 
     def coordinate(self, following_span):
         # print following_span.tokens[0].lex, 111
@@ -778,7 +781,7 @@ class Span:
             if self.tokens[0].pos[0] in u'CP':
                 # print self.tokens[0].content
                 if self.tokens[0].lex in myData.complimentizers:
-                    if self.tokens[0].lex == u'как':
+                    if self.tokens[0].lex in myData.conditional_complimentizers:
                         if self.finite():
                             self.embedded_type = u'complement'
                             self.complement_type = self.tokens[0].lex
@@ -810,12 +813,16 @@ class Span:
                 return True
 
             for token in self.tokens:
+                # print token.content, token.pos
                 if token.pos[0] in u'CQR':
                     continue
-                elif re.match(u'V.p.......', token.pos):
+                elif re.match(u'V.p.+', token.pos):
+                    # print token.content, 777
                     if not self.finite():
                         self.embedded_type = u'participle'
                         return True
+                else:
+                    return False
 
     def accept_embedded(self, other):
         if self.inside_quotes is other.inside_quotes:
@@ -849,6 +856,7 @@ class Span:
 
     def finite(self):
         nominative = 0
+        null_copula = False
         for i, token in enumerate(self.shared_tokens):
             # print u' '.join([token.content for token in self.shared_tokens])
             # print token.pos, token.content, 777
@@ -861,6 +869,10 @@ class Span:
             if token.lex in myData.predicates:
                 # print self.shared_tokens[0].content
                 return True
+            if token.lex in u'-—':
+                null_copula = True
+            elif token.lex in u'здесь':
+                null_copula = True
             if re.match(u'(N...n.)|(P....n.)|(M...[n-])', token.pos):
                 nominative += 1
                 if len(self.shared_tokens[i+1::]) > 1:
@@ -868,8 +880,8 @@ class Span:
                         if self.shared_tokens[i+2].pos[0] in u'NS':
                             return True
         # print u' '.join([token.content for token in self.shared_tokens])
-        # if nominative > 1:
-        #     return True
+        if nominative > 1 and null_copula:
+            return True
         return False
 
     def get_boundaries(self):
@@ -898,6 +910,8 @@ class Token:
 
     def case(self):
         if self.pos[0] == u'N':
+            if self.pos[4] == u'n':
+                return u'a'
             return self.pos[4]
         elif self.pos[0] in u'AP':
             return self.pos[5]
