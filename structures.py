@@ -461,6 +461,16 @@ class Sentence:
                                         break
 
                         elif following_span.embedded:
+                            if span.incomplete():
+                                if span.accept_embedded(following_span) and span.coordinate(following_span):
+                                    span.before_dash += following_span.before_dash
+                                    span.tokens += following_span.tokens
+                                    span.shared_tokens += following_span.tokens
+                                    following_span.in_embedded = True
+                                    following_span.embedded = False
+                                    last_added = j
+                                    # span.semicolon = following_span.semicolon
+
                             if span.predicate_coordination(following_span):
                                 # print following_span.tokens[0].content
                                 # print last_connected, j
@@ -709,6 +719,10 @@ class Span:
         self.complement_type = None
         # self.finite = False
 
+    def incomplete(self):
+        if self.embedded_type == u'complement':
+            return not self.finite()
+
     def predicate_coordination(self, following_span):
         # print self.shared_tokens[1].content, self.nominative(), following_span.nominative(), following_span.shared_tokens[0].content
         if self.inside_quotes is following_span.inside_quotes:
@@ -738,6 +752,8 @@ class Span:
         if self.before_dash or self.before_colon:
             return True
         for token in reversed(self.shared_tokens):
+            if following_span.tokens[0].lex == u'как':
+                return True
             if token.predicate():
                 return False
             else:
