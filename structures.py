@@ -599,24 +599,56 @@ class Sentence:
             self.spans = copy.deepcopy(self.new_spans)
 
     def find_coordination(self, span):
-        for i, token in reversed(list(enumerate(span.tokens))):
-            if token.lex == u'и':
-                if i > 0:
-                    for j, following_token in enumerate(span.tokens[i+1::], start=i+1):
-                        if following_token.lex == u'который':
-                            continue
-                        if following_token.predicate():
-                            # print following_token.content
-                            new_span = copy.deepcopy(span)
-                            new_span.tokens = span.tokens[i::]
-                            new_span.shared_tokens = span.shared_tokens[i::]
-                            span.tokens = span.tokens[:i:]
-                            span.shared_tokens = span.shared_tokens[:i:]
-                            self.new_spans.append(new_span)
-                            return True
+        and_number = len([True for token in span.tokens if token.lex == u'и'])
+        predicate_number = len([True for token in span.tokens if token.predicate()])
+        if predicate_number > 1:
+            if and_number == 1:
+                for i, token in reversed(list(enumerate(span.tokens))):
+                    if token.lex == u'и':
+                        if i > 0:
+                            for j, following_token in enumerate(span.tokens[i+1::], start=i+1):
+                                if following_token.lex == u'который':
+                                    continue
+                                if following_token.predicate():
+                                    # print following_token.content
+                                    new_span = copy.deepcopy(span)
+                                    new_span.tokens = span.tokens[i::]
+                                    new_span.shared_tokens = span.shared_tokens[i::]
+                                    span.tokens = span.tokens[:i:]
+                                    span.shared_tokens = span.shared_tokens[:i:]
+                                    self.new_spans.append(new_span)
+                                    return True
 
-                        elif following_token.pos[0] != u'R':
-                            return False
+                                elif following_token.pos[0] != u'R':
+                                    return False
+            elif and_number > 1:
+                for i, token in reversed(list(enumerate(span.tokens))):
+                    if token.lex == u'и':
+                        if i > 0:
+                            left_span = Span()
+                            left_span.tokens = left_span.shared_tokens = span.tokens[:i:]
+                            right_span = Span()
+                            right_span.tokens = right_span.shared_tokens = span.tokens[i+1::]
+                            if left_span.coordinate(right_span):
+                                # print left_span.tokens[-1].content, right_span.tokens[0].content
+                                continue
+                            else:
+                                # print 1
+                                for j, following_token in enumerate(span.tokens[i+1::], start=i+1):
+                                    # if following_token.lex == u'который':
+                                    #     continue
+                                    if following_token.predicate():
+                                        # print following_token.content
+                                        new_span = copy.deepcopy(span)
+                                        new_span.tokens = span.tokens[i::]
+                                        new_span.shared_tokens = span.shared_tokens[i::]
+                                        span.tokens = span.tokens[:i:]
+                                        span.shared_tokens = span.shared_tokens[:i:]
+                                        self.new_spans.append(new_span)
+                                        return True
+
+                                    # elif following_token.pos[0] != u'R':
+                                    #     return False
         return False
 
     def find_complimentizers(self):
@@ -780,6 +812,8 @@ class Span:
                     # print token.content, token_right.content
                     # print token.case(), token_right.case()
                     return token.case() == token_right.case()
+                elif token.pos[0] == u'R' and token_right.pos[0] == u'R':
+                    return True
         return False
 
     def type(self):
