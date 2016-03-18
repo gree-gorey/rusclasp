@@ -421,7 +421,7 @@ class Sentence:
                                 # если это НЕ примыкающий спан!!!
                                 if j != last_added + 1:
 
-                                    # если это НЕ непосредственно следующий за последним присоединённым спаном
+                                    # если это спан СО СВЯЗЬЮ!!!
                                     if j != last_connected + 1:
                                         if span.accept_embedded(following_span):
                                             span.shared_tokens += following_span.tokens
@@ -434,6 +434,7 @@ class Sentence:
                                         else:
                                             break
 
+                                    # если это ПРИМЫКАЮЩИЙ к висящему куску спан!!!
                                     else:
                                         # print span.tokens[0], 888
                                         # проверка на сочинение!
@@ -753,9 +754,11 @@ class Span:
         if self.before_dash or self.before_colon:
             return True
         for token in reversed(self.shared_tokens):
+            # print token.content, 9000
             if following_span.tokens[0].lex == u'как':
                 return True
             if token.predicate():
+                # print token.lex
                 return False
             else:
                 if following_span.find_right(token):
@@ -765,16 +768,17 @@ class Span:
                 if token.lex == u'такой' and following_span.tokens[0].lex == u'как':
                     return True
 
-    def find_right(self, token_left):
-        for token in self.shared_tokens:
-            # print token.content, token_left.content
-            if token.predicate():
+    def find_right(self, token):
+        for token_right in self.shared_tokens:
+            # print token.content, token_right.content, 888
+            if token_right.predicate():
                 return False
             else:
-                if token.pos[0] in u'ANP' and token_left.pos[0] in u'ANP':
-                    return token.case() == token_left.case()
-                else:
-                    return False
+                if token.pos[0] in u'ANP' and token_right.pos[0] in u'ANP':
+                    # print token.content, token_right.content
+                    # print token.case(), token_right.case()
+                    return token.case() == token_right.case()
+        return False
 
     def type(self):
         if self.is_inserted():
