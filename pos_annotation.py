@@ -3,7 +3,7 @@
 import time
 from structures import Corpus
 
-__author__ = 'Gree-gorey'
+__author__ = u'gree-gorey'
 
 t1 = time.time()
 

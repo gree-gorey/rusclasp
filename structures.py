@@ -9,7 +9,7 @@ import shutil
 import treetaggerwrapper
 # from pymystem3 import Mystem
 
-__author__ = u'Gree-gorey'
+__author__ = u'gree-gorey'
 
 
 class Data:
@@ -45,9 +45,6 @@ class Corpus:
                             result = f.read()
                     yield Text(result, open_name)
 
-# /home/gree-gorey/Corpus/
-# /opt/brat-v1.3_Crunchy_Frog/data/right/
-
 
 class Text:
     def __init__(self, result, path):
@@ -59,7 +56,7 @@ class Text:
 
     def mystem_analyzer(self):
         self.result = self.result.replace(u' ', u' ')
-        self.analysis = myData.m.analyze(self.result)
+        # self.analysis = myData.m.analyze(self.result)
         position = 0
         if self.analysis[-1][u'text'] == u'\n':
             del self.analysis[-1]
@@ -344,7 +341,7 @@ class Sentence:
         predicate = False
         begin = {u'—': False, u'|': False, u'"': False}
         end = False
-        left = right = None
+        left = None
         for i, token in enumerate(self.tokens):
             if token.pos == u'pairCOMMA' and not begin[token.lex]:
                 left = i
@@ -528,7 +525,8 @@ class Sentence:
 
                     # если это ПРИМЫКАЮЩИЙ к висящему куску спан!!!
                     else:
-                        # print span.tokens[0].content, following_span.tokens[0].content, span.accept_base(following_span), span.coordinate(following_span)
+                        # print span.tokens[0].content, following_span.tokens[0].content,
+                        # span.accept_base(following_span), span.coordinate(following_span)
                         if span.accept_base(following_span) and span.coordinate(following_span):
                             # print span.tokens[0].content, following_span.tokens[0].content
                             self.spans[last_connected].tokens += following_span.tokens
@@ -537,7 +535,8 @@ class Sentence:
 
                 # если это ПРИМЫКАЮЩИЙ спан!!!
                 else:
-                    # print span.tokens[0].content, following_span.tokens[0].content, span.accept_base(following_span), span.coordinate(following_span)
+                    # print span.tokens[0].content, following_span.tokens[0].content,
+                    # span.accept_base(following_span), span.coordinate(following_span)
                     if span.accept_base(following_span) and span.coordinate(following_span):
                         # print span.tokens[0].content, following_span.tokens[0].content, 777, j
                         # print following_span.tokens[0].content, backward
@@ -726,7 +725,8 @@ class Span:
             return not self.finite()
 
     def predicate_coordination(self, following_span):
-        # print self.shared_tokens[1].content, self.nominative(), following_span.nominative(), following_span.shared_tokens[0].content
+        # print self.shared_tokens[1].content, self.nominative(),
+        # following_span.nominative(), following_span.shared_tokens[0].content
         if self.inside_quotes is following_span.inside_quotes:
             if not(self.nominative() and following_span.nominative()):
                 if self.embedded_type and following_span.embedded_type:
@@ -766,6 +766,8 @@ class Span:
                     # print token.lex
                     return True
                 if token.lex == u'такой' and following_span.tokens[0].lex == u'как':
+                    return True
+                if following_span.tokens[0].lex == u'прежде всего':
                     return True
 
     def find_right(self, token):
@@ -808,10 +810,14 @@ class Span:
                 # print self.tokens[0].content
                 if self.tokens[0].lex in myData.complimentizers:
                     if self.tokens[0].lex in myData.conditional_complimentizers:
+                        # print self.tokens[0].lex, self.tokens[2].lex
                         if self.finite():
+                            # print self.tokens[0].lex, self.tokens[2].lex, 777
                             self.embedded_type = u'complement'
                             self.complement_type = self.tokens[0].lex
                             return True
+                        else:
+                            return False
                     else:
                         self.embedded_type = u'complement'
                         self.complement_type = self.tokens[0].lex
@@ -978,16 +984,6 @@ class Token:
 
     def end_of_span(self):
         return self.pos == u'COMMA'
-
-    def agree_adj_noun(self, other):
-        for varI in self.inflection:
-            if other.gender in varI or u'мн' in varI:
-                for varJ in other.inflection:
-                    try:
-                        if varJ[0] in varI and varJ[1] in varI:
-                            return True
-                    except:
-                        print varJ[0], other.content
 
     def agree_pr_noun(self, noun):
         if noun.pos[0] == u'N':
