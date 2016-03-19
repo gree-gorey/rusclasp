@@ -1,10 +1,14 @@
-clause_segmentation
-========
+[![Documentation Status](https://readthedocs.org/projects/rusclasp-documentation/badge/?version=latest)](http://rusclasp-documentation.readthedocs.org/en/latest/?badge=latest)
 
-segmentation Russian texts into clauses
+# RuClaSp: Russain Clause Splitter
 
-# Content
+A Python module for segmentation Russian sentences into clauses.
 
-* **pos_annotation.py** serves for pre-processing text (pos tagging)
-* **split.py** for final segmentation into clauses
-* **strucrures.py** contain all the classes along with functions
+## Dependencies
+
+* TreeTagger
+* Python 2.7
+
+## Installation
+
+## Usage
