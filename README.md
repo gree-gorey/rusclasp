@@ -1,6 +1,6 @@
 [![Documentation Status](https://readthedocs.org/projects/rusclasp-documentation/badge/?version=latest)](http://rusclasp-documentation.readthedocs.org/en/latest/?badge=latest)
 
-# RuClaSp: Russain Clause Splitter
+# RusClaSp: Russain Clause Splitter
 
 A Python module for segmentation Russian sentences into clauses.
 
