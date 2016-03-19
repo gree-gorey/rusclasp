@@ -62,7 +62,7 @@ for text in newCorpus.texts(u'json'):
 
         for span in sentence.spans:
             span.get_boundaries()
-            # print span.base, span.tokens[0].content
+            # print span.quasi_embedded, span.tokens[0].content
 
     text.write_clause_ann()
 

@@ -424,12 +424,14 @@ class Sentence:
                         # print span.tokens[0].content, following_span.tokens[0].content
                         if not following_span.embedded and not following_span.in_embedded and not following_span.inserted:
 
+                            # связь COORDINATION!!!
                             if span.predicate_coordination(following_span):
                                 # print following_span.tokens[0].content
                                 # print last_connected, j
                                 following_span.embedded = True
                                 span.before_dash += following_span.before_dash
                                 following_span.embedded_type = span.embedded_type
+                                following_span.quasi_embedded = True
                                 self.verb_relations.append((last_connected_verb, j))
                                 last_connected_verb = j
 
@@ -490,16 +492,36 @@ class Sentence:
                                     last_added = j
                                     # span.semicolon = following_span.semicolon
 
+                            # связь COORDINATION!!!
                             if span.predicate_coordination(following_span):
                                 # print following_span.tokens[0].content
                                 # print last_connected, j
                                 span.before_dash += following_span.before_dash
                                 following_span.embedded_type = span.embedded_type
+                                following_span.quasi_embedded = True
                                 self.verb_relations.append((last_connected_verb, j))
                                 last_connected_verb = j
 
                         if following_span.semicolon:
                             break
+
+    def complete_base(self, span, i):
+        for j, following_span in enumerate(self.spans[i+1::], start=i+1):
+            if following_span.quasi_embedded:
+                if span.accept_base(following_span):
+                    span.shared_tokens += following_span.tokens
+                    span.before_dash += following_span.before_dash
+                    following_span.embedded = False
+                    following_span.base = True
+                    following_span.in_base = True
+                    self.relations.append((i, j))
+                    to_remove = []
+                    for k, relation in enumerate(self.verb_relations):
+                        if j in relation:
+                            to_remove.append(k)
+                    for position in to_remove:
+                        self.verb_relations.pop(position)
+                    break
 
     def restore_base(self):
         for i, span in reversed(list(enumerate(self.spans))):
@@ -515,6 +537,11 @@ class Sentence:
             if span.basic and not span.base and not span.in_base:
                 # print span.tokens[0].content
                 self.join_base(span, i, False)
+
+        for i, span in enumerate(self.spans):
+            if span.base and not span.finite():
+                # print span.tokens[0].content
+                self.complete_base(span, i)
 
     def join_base(self, span, i, backward=True):
         switch = False
@@ -778,6 +805,7 @@ class Span:
         self.begin = 0
         self.end = 0
         self.embedded = False
+        self.quasi_embedded = False
         self.in_embedded = False
         self.embedded_type = None
         self.base = False
