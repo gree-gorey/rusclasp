@@ -503,8 +503,22 @@ class Sentence:
         last_added = i
         last_connected = i
         for j, following_span in enumerate(self.spans[i+1::], start=i+1):
-            # print span.tokens[0].content, following_span.tokens[1].content, 111, following_span.base is not backward
-            if following_span.basic and following_span.in_base is not backward and following_span.base is not backward:
+            if following_span.basic and following_span.in_base is backward and following_span.base is backward:
+                # если это ПРИМЫКАЮЩИЙ спан!!!
+                if j == last_added + 1:
+                    # print span.tokens[0].content, following_span.tokens[0].content,
+                    # span.accept_base(following_span), span.coordinate(following_span)
+                    if span.accept_base(following_span) and span.coordinate(following_span):
+                        # print span.tokens[0].content, following_span.tokens[0].content, 777, j
+                        # print following_span.tokens[0].content, backward
+                        span.tokens += following_span.tokens
+                        span.shared_tokens += following_span.tokens
+                        span.before_dash += following_span.before_dash
+                        following_span.in_base = True
+                        following_span.base = False
+                        last_added = j
+            # print span.tokens[0].content, following_span.tokens[1].content, 111, following_span.base, backward
+            elif following_span.basic and following_span.in_base is not backward and following_span.base is not backward:
                 # print span.tokens[0].content, following_span.tokens[0].content, 555, j
 
                 switch = following_span.base
