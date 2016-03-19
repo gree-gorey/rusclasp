@@ -523,6 +523,8 @@ class Sentence:
         last_added = i
         last_connected = i
         for j, following_span in enumerate(self.spans[i+1::], start=i+1):
+            if span.finite() and following_span.finite():
+                break
             if not backward:
                 if following_span.basic and following_span.in_base is backward and following_span.base is backward:
                     # print span.tokens[0].content, following_span.tokens[0].content, 555, j
@@ -540,6 +542,8 @@ class Sentence:
                             following_span.in_base = True
                             following_span.base = False
                             last_added = j
+                            if span.before_dash:
+                                span.null_copula = True
                             continue
             # print span.tokens[0].content, following_span.tokens[1].content, 111, following_span.base, backward
             if following_span.basic and following_span.in_base is not backward and following_span.base is not backward:
@@ -788,6 +792,7 @@ class Span:
         self.before_dash = False
         self.before_colon = False
         self.complement_type = None
+        self.null_copula = False
         # self.finite = False
 
     def incomplete(self):
@@ -960,7 +965,6 @@ class Span:
 
     def finite(self):
         nominative = 0
-        null_copula = False
         for i, token in enumerate(self.shared_tokens):
             # print u' '.join([token.content for token in self.shared_tokens])
             # print token.pos, token.content, 777
@@ -975,17 +979,20 @@ class Span:
                 return True
             if token.lex == u'—' or token.lex == u'-':
                 # print u' '.join([token.content for token in self.shared_tokens]), token.content, token.lex
-                null_copula = True
+                self.null_copula = True
             elif token.lex == u'здесь':
-                null_copula = True
+                self.null_copula = True
             if re.match(u'(N...n.)|(P....n.)|(M...[n-])', token.pos):
                 nominative += 1
                 if len(self.shared_tokens[i+1::]) > 1:
                     if self.shared_tokens[i+1].lex == u'не':
                         if self.shared_tokens[i+2].pos[0] in u'NS':
                             return True
+            if token.pos[0] == u'Q':
+                # print token.content
+                nominative += 1
         # print u' '.join([token.content for token in self.shared_tokens])
-        if nominative > 1 and null_copula:
+        if nominative > 1 and self.null_copula:
             # print u' '.join([token.content for token in self.shared_tokens])
             return True
         return False
