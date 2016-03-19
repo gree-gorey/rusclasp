@@ -99,7 +99,13 @@ class Text:
     def sentence_splitter(self):
         for i, result in enumerate(self.result):
             self.sentence_on()
-            self.add_token(result) if i == len(self.result)-1 else self.add_token(result, self.result[i+1])
+            if i == len(self.result)-1:
+                self.add_token(result)
+            elif i == len(self.result)-2:
+                self.add_token(result, self.result[i+1])
+            else:
+                self.add_token(result, self.result[i+1], self.result[i+2])
+            # self.add_token(result) if i == len(self.result)-1 else self.add_token(result, self.result[i+1])
             if self.end_of_sentence():
                 # print self.result[i-1]['lex']
                 self.sentence_off()
@@ -140,7 +146,7 @@ class Text:
         else:
             self.sentences[-1].after_abbreviation = False
 
-    def add_punctuation(self, token, next_token):
+    def add_punctuation(self, token, next_token, token_after_next=None):
         if token[u'gr'] == u',':
             self.sentences[-1].tokens[-1].pos = u'COMMA'
             if len(self.sentences[-1].tokens) > 1:
@@ -164,20 +170,34 @@ class Text:
                 self.sentences[-1].tokens[-1].pos = u'UNKNOWN'
                 self.sentences[-1].tokens[-1].lex = token[u'lex']
         elif token[u'gr'] == u'SENT':
-            self.add_period(next_token)
+            self.add_period(next_token, token_after_next)
 
-    def add_period(self, next_token):
+    def add_period(self, next_token, token_after_next=None):
         self.sentences[-1].tokens[-1].pos = u'PERIOD'
         if self.sentences[-1].after_abbreviation:
             self.sentences[-1].tokens[-1].after_abbreviation = True
-        if next_token is not None:
-            # print next_token[u'text']
-            if next_token[u'text'].replace(u'-', u'').istitle() or next_token[u'text'] in u'\"\'':
+        if next_token and token_after_next:
+            if next_token[u'text'].replace(u'-', u'').istitle():
                 # print next_token[u'text']
                 self.sentences[-1].tokens[-1].next_token_title = True
                 if next_token[u'gr'][0] == u'N':
                     if next_token[u'gr'][1] == u'p':
                         self.sentences[-1].tokens[-1].next_token_name = True
+            elif next_token[u'text'] in u'\"\'' and token_after_next[u'text'].replace(u'-', u'').istitle():
+                # print next_token[u'text']
+                self.sentences[-1].tokens[-1].next_token_title = True
+                if next_token[u'gr'][0] == u'N':
+                    if next_token[u'gr'][1] == u'p':
+                        self.sentences[-1].tokens[-1].next_token_name = True
+        elif next_token:
+            # print next_token[u'text']
+            if next_token[u'text'].replace(u'-', u'').istitle():
+                # print next_token[u'text']
+                self.sentences[-1].tokens[-1].next_token_title = True
+                if next_token[u'gr'][0] == u'N':
+                    if next_token[u'gr'][1] == u'p':
+                        self.sentences[-1].tokens[-1].next_token_name = True
+
                 # elif next_token[u'gr'] == u'-':
                 #     self.sentences[-1].tokens[-1].next_token_title = False
 
@@ -194,7 +214,7 @@ class Text:
             self.sentences[-1].tokens[-1].pos = token[u'gr']
             self.sentences[-1].tokens[-1].lex = token[u'lex']
 
-    def add_token(self, token, next_token=None):
+    def add_token(self, token, next_token=None, token_after_next=None):
         self.sentences[-1].tokens.append(Token())
         self.sentences[-1].tokens[-1].begin = token[u'begin']
         self.sentences[-1].tokens[-1].end = token[u'end']
@@ -202,7 +222,7 @@ class Text:
         if token[u'gr'][0].isalpha() and token[u'gr'] != u'SENT':
             self.add_word(token, next_token)
         else:
-            self.add_punctuation(token, next_token)
+            self.add_punctuation(token, next_token, token_after_next)
         self.after_name()
 
     def write_clause_ann(self):
@@ -503,22 +523,26 @@ class Sentence:
         last_added = i
         last_connected = i
         for j, following_span in enumerate(self.spans[i+1::], start=i+1):
-            if following_span.basic and following_span.in_base is backward and following_span.base is backward:
-                # если это ПРИМЫКАЮЩИЙ спан!!!
-                if j == last_added + 1:
-                    # print span.tokens[0].content, following_span.tokens[0].content,
-                    # span.accept_base(following_span), span.coordinate(following_span)
-                    if span.accept_base(following_span) and span.coordinate(following_span):
-                        # print span.tokens[0].content, following_span.tokens[0].content, 777, j
-                        # print following_span.tokens[0].content, backward
-                        span.tokens += following_span.tokens
-                        span.shared_tokens += following_span.tokens
-                        span.before_dash += following_span.before_dash
-                        following_span.in_base = True
-                        following_span.base = False
-                        last_added = j
+            if not backward:
+                if following_span.basic and following_span.in_base is backward and following_span.base is backward:
+                    # print span.tokens[0].content, following_span.tokens[0].content, 555, j
+
+                    # если это ПРИМЫКАЮЩИЙ спан!!!
+                    if j == last_added + 1:
+                        # print span.tokens[0].content, following_span.tokens[0].content,
+                        # span.accept_base(following_span), span.coordinate(following_span)
+                        if span.accept_base(following_span) and span.coordinate(following_span):
+                            # print span.tokens[0].content, following_span.tokens[0].content, 777, j
+                            # print following_span.tokens[0].content, backward
+                            span.tokens += following_span.tokens
+                            span.shared_tokens += following_span.tokens
+                            span.before_dash += following_span.before_dash
+                            following_span.in_base = True
+                            following_span.base = False
+                            last_added = j
+                            continue
             # print span.tokens[0].content, following_span.tokens[1].content, 111, following_span.base, backward
-            elif following_span.basic and following_span.in_base is not backward and following_span.base is not backward:
+            if following_span.basic and following_span.in_base is not backward and following_span.base is not backward:
                 # print span.tokens[0].content, following_span.tokens[0].content, 555, j
 
                 switch = following_span.base

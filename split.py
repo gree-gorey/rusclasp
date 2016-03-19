@@ -56,13 +56,13 @@ for text in newCorpus.texts(u'json'):
         sentence.split_base()
 
         # for span in sentence.spans:
-        #     print span.shared_tokens[0].content, span.tokens[0].content
+        #     print span.shared_tokens[0].content, span.tokens[0].content, span.basic
 
         sentence.restore_base()
 
         for span in sentence.spans:
             span.get_boundaries()
-            # print span.basic, span.tokens[0].content
+            # print span.base, span.tokens[0].content
 
     text.write_clause_ann()
 
