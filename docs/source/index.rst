@@ -11,6 +11,6 @@ RusClaSp: сегментатор предикаций
 .. toctree::
    :maxdepth: 2
 
-   Установка
-   Использование
+   installation
+   usage
 

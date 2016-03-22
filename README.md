@@ -1,4 +1,4 @@
-[![Documentation Status](https://readthedocs.org/projects/rusclasp-documentation/badge/?version=latest)](http://rusclasp-documentation.readthedocs.org/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/rusclasp/badge/?version=latest)](http://rusclasp.readthedocs.org/en/latest/?badge=latest)
 
 # RusClaSp: Russain Clause Splitter
 
