@@ -3,14 +3,25 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-RusClaSp: сегментатор предикаций
+rusclasp: сегментатор предикаций
 ================================
 
-Оглавление:
+rusclasp_ — это python модуль, позволяющий разбивать предложения русского языка на предикации с восстановлением разрывов.
+
+
+Содержание:
 
 .. toctree::
    :maxdepth: 2
 
-   installation
-   usage
+   usage/index
+   internals/index
 
+
+Исходный код - на github_. Если заметили ошибку, то пишите
+в `баг-трекер`_.
+
+
+.. _rusclasp: https://github.com/gree-gorey/rusclasp
+.. _github: https://github.com/gree-gorey/rusclaspv
+.. _баг-трекер: https://github.com/gree-gorey/rusclasp/issues
