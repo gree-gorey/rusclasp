@@ -604,8 +604,8 @@ class Sentence:
 
                 # если это ПРИМЫКАЮЩИЙ спан!!!
                 else:
-                    # print span.tokens[0].content, following_span.tokens[0].content,
-                    # span.accept_base(following_span), span.coordinate(following_span)
+                    # print span.tokens[0].content, following_span.tokens[0].content,\
+                    #     span.accept_base(following_span), span.coordinate(following_span)
                     if span.accept_base(following_span) and span.coordinate(following_span):
                         # print span.tokens[0].content, following_span.tokens[0].content, 777, j
                         # print following_span.tokens[0].content, backward
@@ -838,7 +838,9 @@ class Span:
                     if self.embedded_type == u'complement':
                         if self.complement_type != following_span.complement_type:
                             return False
-                for token in self.shared_tokens:
+                for token in reversed(self.shared_tokens):
+                    if re.match(u'(N...n.)|(P....n.)|(M...[n-])', token.pos):
+                        return False
                     if token.predicate():
                         # print token.content
                         for other_token in following_span.tokens:
@@ -882,8 +884,11 @@ class Span:
                 if token.pos[0] in u'ANP' and token_right.pos[0] in u'ANP':
                     # print token.content, token_right.content
                     # print token.case(), token_right.case()
-                    return token.case() == token_right.case()
+                    if token.case() == token_right.case():
+                        return True
                 elif token.pos[0] == u'R' and token_right.pos[0] == u'R':
+                    return True
+                elif token.pos[0] == u'M' and token_right.pos[0] == u'M':
                     return True
         return False
 
@@ -1055,6 +1060,8 @@ class Token:
                 return u'a'
             return self.pos[4]
         elif self.pos[0] in u'AP':
+            if self.pos[5] == u'n':
+                return u'a'
             return self.pos[5]
         return False
 
