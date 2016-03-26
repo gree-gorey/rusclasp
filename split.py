@@ -16,7 +16,7 @@ for text in newCorpus.texts(u'json'):
         # print sentence.tokens[0].content
 
         # for token in sentence.tokens:
-        #     print token.pos, token.content
+        #     print token.pos, token.content, token.lex
         # print u'***************'
 
         # sentence.find_pp()
@@ -31,6 +31,8 @@ for text in newCorpus.texts(u'json'):
 
         # for token in sentence.tokens:
         #     print token.pos, token.content
+        # print u'***************'
+        # print
 
         sentence.span_splitter()
 

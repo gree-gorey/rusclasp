@@ -68,7 +68,7 @@ class Text:
     def treetagger_analyzer(self):
         # self.result = self.result.replace(u' ', u' ')
         self.result = re.sub(u'["«»‘’]', u'\'', self.result, flags=re.U)
-        self.result = re.sub(u'(^|\. )\'(.+?)\'(, ?[—-])', u'\\1"\\2"\\3', self.result, flags=re.U)
+        self.result = re.sub(u'(^|\. )\'(.+?)\'(, ?)([—-])', u'\\1"\\2"\\3~', self.result, flags=re.U)
         # print self.result
         self.analysis = myData.t.tag_text(self.result, tagblanks=True)
         # for item in self.analysis:
@@ -331,7 +331,7 @@ class Sentence:
                     # print 1
                     self.spans[-1].before_colon = True
 
-            if self.spans[-1].tokens[0].lex == u'—':
+            if self.spans[-1].tokens[0].lex == u'~':
                 self.spans[-1].tokens.pop(0)
 
             if len(self.spans[-1].tokens) > 0:
@@ -363,11 +363,14 @@ class Sentence:
         end = False
         left = None
         for i, token in enumerate(self.tokens):
+            # print token.content
             if token.pos == u'pairCOMMA' and not begin[token.lex]:
+                # print token.content, 777
                 left = i
                 begin[token.lex] = True
                 end = False
             elif token.pos[0] == u'V' and sum(begin.values()) > 0:
+                # print token.content
                 predicate = True
             elif token.pos == u'pairCOMMA' and begin[token.lex]:
                 right = i
@@ -377,6 +380,7 @@ class Sentence:
                 predicate = False
                 end = True
         if not end and left:
+            # print 1
             self.tokens[left].pos = u'COMMA'
 
     def find_names(self):
@@ -526,11 +530,12 @@ class Sentence:
     def restore_base(self):
         for i, span in reversed(list(enumerate(self.spans))):
             if span.basic:
-                # print span.tokens[1].content, span.finite()
-                if not span.finite():
+                # print span.tokens[0].content, span.finite()
+                if not span.finite() and not span.before_dash:
+                    # print span.tokens[0].content
                     continue
                 else:
-                    # print span.tokens[1].content
+                    # print span.tokens[0].content
                     self.join_base(span, i)
 
         for i, span in enumerate(self.spans):
@@ -540,7 +545,7 @@ class Sentence:
 
         for i, span in enumerate(self.spans):
             if span.base and not span.finite():
-                # print span.tokens[0].content
+                # print span.tokens[0].content, span.ellipsis
                 self.complete_base(span, i)
 
     def join_base(self, span, i, backward=True):
@@ -551,8 +556,10 @@ class Sentence:
         last_connected = i
         for j, following_span in enumerate(self.spans[i+1::], start=i+1):
             if span.finite() and following_span.finite():
+                # print span.tokens[0].content
                 break
             if not backward:
+                # print 1
                 if following_span.basic and following_span.in_base is backward and following_span.base is backward:
                     # print span.tokens[0].content, following_span.tokens[0].content, 555, j
 
@@ -570,7 +577,8 @@ class Sentence:
                             following_span.base = False
                             last_added = j
                             if span.before_dash:
-                                span.null_copula = True
+                                # print 1
+                                span.ellipsis = True
                             continue
             # print span.tokens[0].content, following_span.tokens[1].content, 111, following_span.base, backward
             if following_span.basic and following_span.in_base is not backward and following_span.base is not backward:
@@ -585,6 +593,7 @@ class Sentence:
                     # если это спан СО СВЯЗЬЮ!!!
                     if j != last_connected + 1:
                         if span.accept_base(following_span):
+                            # print 1
                             span.shared_tokens += following_span.tokens
                             span.before_dash += following_span.before_dash
                             following_span.in_base = True
@@ -606,15 +615,23 @@ class Sentence:
                 else:
                     # print span.tokens[0].content, following_span.tokens[0].content,\
                     #     span.accept_base(following_span), span.coordinate(following_span)
-                    if span.accept_base(following_span) and span.coordinate(following_span):
-                        # print span.tokens[0].content, following_span.tokens[0].content, 777, j
-                        # print following_span.tokens[0].content, backward
-                        span.tokens += following_span.tokens
-                        span.shared_tokens += following_span.tokens
-                        span.before_dash += following_span.before_dash
-                        following_span.in_base = True
-                        following_span.base = False
-                        last_added = j
+                    # print span.tokens[0].content
+                    # print span.before_dash, span.finite(), following_span.finite()
+                    if (span.before_dash and not span.finite() and not following_span.finite()) or\
+                            (not span.before_dash and (span.finite() or following_span.finite())):
+                        # print 1
+                        if span.accept_base(following_span) and span.coordinate(following_span):
+                            # print span.tokens[0].content, following_span.tokens[0].content, 777, j
+                            # print following_span.tokens[0].content, backward
+                            span.tokens += following_span.tokens
+                            span.shared_tokens += following_span.tokens
+                            span.before_dash += following_span.before_dash
+                            following_span.in_base = True
+                            following_span.base = False
+                            last_added = j
+                            if span.before_dash:
+                                # print 1
+                                span.ellipsis = True
 
             # if following_span.base:
             #     break
@@ -821,6 +838,7 @@ class Span:
         self.before_colon = False
         self.complement_type = None
         self.null_copula = False
+        self.ellipsis = False
         # self.finite = False
 
     def incomplete(self):
@@ -917,6 +935,9 @@ class Span:
     def is_embedded(self):
         if not self.inserted:
             if self.tokens[0].pos[0] in u'CP':
+                if self.tokens[0].content == u'несмотря на':
+                    self.embedded_type = u'gerund'
+                    return True
                 # print self.tokens[0].content
                 if self.tokens[0].lex in myData.complimentizers:
                     if self.tokens[0].lex in myData.conditional_complimentizers:
@@ -1000,7 +1021,7 @@ class Span:
         nominative = 0
         for i, token in enumerate(self.shared_tokens):
             # print u' '.join([token.content for token in self.shared_tokens])
-            # print token.pos, token.content, 777
+            # print token.pos, token.content, 777, token.lex
             if re.match(u'(V.[imc].......)|(V.p....ps.)|(A.....s)', token.pos):
                 # print u' '.join([token.content for token in self.shared_tokens])
                 return True
@@ -1011,8 +1032,9 @@ class Span:
                 # print self.shared_tokens[0].content
                 return True
             if token.lex == u'—' or token.lex == u'-':
+                # print 1
                 # print u' '.join([token.content for token in self.shared_tokens]), token.content, token.lex
-                self.null_copula = True
+                self.ellipsis = True
             elif token.lex == u'здесь':
                 self.null_copula = True
             if re.match(u'(N...n.)|(P....n.)|(M...[n-])', token.pos):
@@ -1026,6 +1048,9 @@ class Span:
                 nominative += 1
         # print u' '.join([token.content for token in self.shared_tokens])
         if nominative > 1 and self.null_copula:
+            # print u' '.join([token.content for token in self.shared_tokens])
+            return True
+        if self.ellipsis:
             # print u' '.join([token.content for token in self.shared_tokens])
             return True
         return False
