@@ -46,6 +46,78 @@ class Corpus:
                     yield Text(result, open_name)
 
 
+class PairCorpora:
+    def __init__(self, path_to_gold, path_to_tested):
+        self.path_to_gold = path_to_gold
+        self.path_to_tested = path_to_tested
+
+    def annotations(self):
+        for root, dirs, files in os.walk(self.path_to_gold):
+            for filename in files:
+                if u'ann' in filename:
+                    open_name_gold = self.path_to_gold + filename
+                    open_name_tested = self.path_to_tested + filename
+                    open_name_json = self.path_to_tested + filename.replace(u'ann', u'json')
+                    with codecs.open(open_name_gold, u'r', u'utf-8') as f:
+                        ann_gold = f.readlines()
+                    with codecs.open(open_name_tested, u'r', u'utf-8') as f:
+                        ann_tested = f.readlines()
+                    with codecs.open(open_name_json, u'r', u'utf-8') as f:
+                        tokens = json.load(f)
+                    yield EvaluatedText(ann_gold, ann_tested, tokens)
+
+
+class EvaluatedText:
+    def __init__(self, ann_gold, ann_tested, tokens):
+        self.ann_gold = ann_gold
+        self.ann_tested = ann_tested
+        self.tokens = tokens
+        self.spans_gold = []
+        self.spans_tested = []
+        self.precision = 0
+        self.recall = 0
+
+    def evaluate(self):
+        match = 0
+        for span_gold in self.spans_gold:
+            for span_tested in self.spans_tested:
+                if span_gold.entity_number == span_tested.entity_number:
+                    if span_gold.tokens == span_tested.tokens:
+                        match += 1
+                    break
+        self.precision = float(match) / float(len(self.spans_tested))
+        self.recall = float(match) / float(len(self.spans_gold))
+
+    def get_spans(self):
+        for span in self.spans_generator(self.ann_gold):
+            self.spans_gold.append(span)
+
+        for span in self.spans_generator(self.ann_tested):
+            self.spans_tested.append(span)
+
+    def spans_generator(self, annotation):
+        for line in annotation:
+            line = line.split(u'\t')
+            if line[0][0] == u'T':
+                new_span = Span()
+                new_span.entity_number = int(line[0][1::])
+                coordinates = line[1].split(u' ')
+                new_span.begin = int(coordinates[1])
+                new_span.end = int(coordinates[2])
+                # print new_span.entity_number, new_span.begin
+
+                for token in self.tokens:
+                    if token[u'gr'] not in u',-SENT':
+                        if token[u'begin'] >= new_span.begin:
+                            if token[u'end'] <= new_span.end:
+                                new_span.tokens.append(token[u'text'])
+                                # print token[u'text']
+                            else:
+                                break
+
+                yield new_span
+
+
 class Text:
     def __init__(self, result, path):
         self.result = result
@@ -848,6 +920,7 @@ class Span:
         self.complement_type = None
         self.null_copula = False
         self.ellipsis = False
+        self.entity_number = None
         # self.finite = False
 
     def incomplete(self):

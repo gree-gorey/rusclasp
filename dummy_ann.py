@@ -5,16 +5,22 @@ from structures import Corpus
 
 __author__ = u'gree-gorey'
 
-t1 = time.time()
 
-newCorpus = Corpus(u'/home/gree-gorey/CorpusTest/')
+def main():
+    t1 = time.time()
 
-for text in newCorpus.texts(u'txt'):
+    new_corpus = Corpus(u'/home/gree-gorey/CorpusTest/')
 
-    text.write_dummy_ann()
+    for text in new_corpus.texts(u'txt'):
 
-    text.copy_into_brat(u'/opt/brat-v1.3_Crunchy_Frog/data/left/', True)
+        text.write_dummy_ann()
 
-t2 = time.time()
+        text.copy_into_brat(u'/opt/brat-v1.3_Crunchy_Frog/data/left/', True)
 
-print t2 - t1
+    t2 = time.time()
+
+    print t2 - t1
+
+
+if __name__ == '__main__':
+    main()

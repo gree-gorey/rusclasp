@@ -5,71 +5,78 @@ from structures import Corpus
 
 __author__ = u'gree-gorey'
 
-t1 = time.time()
 
-newCorpus = Corpus(u'/home/gree-gorey/Corpus/')
+def main():
+    t1 = time.time()
 
-for text in newCorpus.texts(u'json'):
-    text.sentence_splitter()
-    # print len(text.sentences)
-    for sentence in text.sentences:
-        # print sentence.tokens[0].content
+    # new_corpus = Corpus(u'/home/gree-gorey/Corpus/')
+    new_corpus = Corpus(u'/home/gree-gorey/tested/')
 
-        # for token in sentence.tokens:
-        #     print token.pos, token.content, token.lex
-        # print u'***************'
+    for text in new_corpus.texts(u'json'):
+        text.sentence_splitter()
+        # print len(text.sentences)
+        for sentence in text.sentences:
+            # print sentence.tokens[0].content
 
-        # sentence.find_pp()
+            # for token in sentence.tokens:
+            #     print token.pos, token.content, token.lex
+            # print u'***************'
 
-        # sentence.find_coordination()
+            # sentence.find_pp()
 
-        sentence.find_complimentizers()
+            # sentence.find_coordination()
 
-        sentence.find_names()
+            sentence.find_complimentizers()
 
-        sentence.eliminate_pair_comma()
+            sentence.find_names()
 
-        # for token in sentence.tokens:
-        #     print token.pos, token.content
-        # print u'***************'
-        # print
+            sentence.eliminate_pair_comma()
 
-        sentence.span_splitter()
+            # for token in sentence.tokens:
+            #     print token.pos, token.content
+            # print u'***************'
+            # print
 
-        sentence.get_shared_tokens()  # loop through all the spans 1
+            sentence.span_splitter()
 
-        sentence.split_double_complimentizers()  # loop through all the spans 2
+            sentence.get_shared_tokens()  # loop through all the spans 1
 
-        for span in sentence.spans:  # loop through all the spans 3
+            sentence.split_double_complimentizers()  # loop through all the spans 2
 
-            # decide whether span is inserted or embedded or neither
-            span.type()
-            # print span.tokens[0].content, span.before_dash
+            for span in sentence.spans:  # loop through all the spans 3
 
-        # split embedded span if it contains > 1 predicate
-        sentence.split_embedded()
+                # decide whether span is inserted or embedded or neither
+                span.type()
+                # print span.tokens[0].content, span.before_dash
 
-        # for span in sentence.spans:
-        #     print span.shared_tokens[0].content, span.tokens[0].content
+            # split embedded span if it contains > 1 predicate
+            sentence.split_embedded()
 
-        # walk through spans and join whenever possible
-        sentence.restore_embedded()
+            # for span in sentence.spans:
+            #     print span.shared_tokens[0].content, span.tokens[0].content
 
-        sentence.split_base()
+            # walk through spans and join whenever possible
+            sentence.restore_embedded()
 
-        # for span in sentence.spans:
-        #     print span.shared_tokens[0].content, span.tokens[0].content, span.basic
+            sentence.split_base()
 
-        sentence.restore_base()
+            # for span in sentence.spans:
+            #     print span.shared_tokens[0].content, span.tokens[0].content, span.basic
 
-        for span in sentence.spans:
-            span.get_boundaries()
-            # print span.quasi_embedded, span.tokens[0].content
+            sentence.restore_base()
 
-    text.write_clause_ann()
+            for span in sentence.spans:
+                span.get_boundaries()
+                # print span.quasi_embedded, span.tokens[0].content
 
-    text.copy_into_brat(u'/opt/brat-v1.3_Crunchy_Frog/data/right/')
+        text.write_clause_ann()
 
-t2 = time.time()
+        text.copy_into_brat(u'/opt/brat-v1.3_Crunchy_Frog/data/right/')
 
-print t2 - t1
+    t2 = time.time()
+
+    print t2 - t1
+
+
+if __name__ == '__main__':
+    main()
