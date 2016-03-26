@@ -9,7 +9,8 @@ __author__ = u'gree-gorey'
 def main():
     t1 = time.time()
 
-    new_pair_corpora = PairCorpora(u'/opt/brat-v1.3_Crunchy_Frog/data/gold/', u'/home/gree-gorey/tested/')
+    # new_pair_corpora = PairCorpora(u'/opt/brat-v1.3_Crunchy_Frog/data/gold/', u'/home/gree-gorey/tested/')
+    new_pair_corpora = PairCorpora(u'/opt/brat-v1.3_Crunchy_Frog/data/gold/', u'/home/gree-gorey/stupid/')
 
     for evaluated_text in new_pair_corpora.annotations():
         evaluated_text.get_spans()
@@ -29,6 +30,7 @@ def main():
 
         print u'Precision: ', evaluated_text.precision
         print u'Recall: ', evaluated_text.recall
+        print u'F-value: ', evaluated_text.f_value
 
     t2 = time.time()
 

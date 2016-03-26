@@ -54,7 +54,7 @@ class PairCorpora:
     def annotations(self):
         for root, dirs, files in os.walk(self.path_to_gold):
             for filename in files:
-                if u'ann' in filename:
+                if u'.ann' in filename:
                     open_name_gold = self.path_to_gold + filename
                     open_name_tested = self.path_to_tested + filename
                     open_name_json = self.path_to_tested + filename.replace(u'ann', u'json')
@@ -78,17 +78,18 @@ class EvaluatedText:
         self.relations_tested = []
         self.precision = 0
         self.recall = 0
+        self.f_value = 0
 
     def evaluate(self):
         match = 0
         for span_gold in self.spans_gold:
             for span_tested in self.spans_tested:
-                if span_gold.entity_number == span_tested.entity_number:
-                    if span_gold.tokens == span_tested.tokens:
-                        match += 1
+                if span_gold.tokens == span_tested.tokens:
+                    match += 1
                     break
         self.precision = float(match) / float(len(self.spans_tested))
         self.recall = float(match) / float(len(self.spans_gold))
+        self.f_value = (self.precision + self.recall) / 2
 
     def restore_split(self):
         for r in sorted(self.relations_gold, reverse=True):
