@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import time
-from structures import PairCorpora, Span
+from structures import PairCorpora
 
 __author__ = u'gree-gorey'
 

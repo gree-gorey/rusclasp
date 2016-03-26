@@ -331,6 +331,19 @@ class Text:
             self.add_punctuation(token, next_token, token_after_next)
         self.after_name()
 
+    def write_stupid_clause_ann(self):
+        i = 0
+        write_name = self.path.replace(u'json', u'ann')
+        w = codecs.open(write_name, u'w', u'utf-8')
+
+        for sentence in self.sentences:
+            for span in sentence.spans:
+                i += 1
+                line = u'T' + str(i) + u'\t' + u'Span ' + str(span.begin) + u' ' + str(span.end) + u'\t' + u'\n'
+                w.write(line)
+
+        w.close()
+
     def write_clause_ann(self):
         i = 0
         j = 0
@@ -470,6 +483,35 @@ class Sentence:
                 self.span_off()
             # elif token.content != u'\"':
             #     self.span_on()
+        self.span_off()
+
+    def stupid_span_splitter(self):
+        for token in self.tokens:
+            add = False
+            off = False
+            while not add:
+                if token.content != u'\"':
+                    self.span_on()
+                    self.add_token(token)
+                    if not token.stupid_end_of_span():
+                        add = True
+                    if token.stupid_end_of_span() and off:
+                        add = True
+                        continue
+                else:
+                    if not self.quotes:
+                        self.quotes = True
+                    else:
+                        self.quotes = False
+                    add = True
+                if token.stupid_end_of_span():
+                    # print token.content
+                    self.span_off()
+                    off = True
+                    if token.pos == u'COMMA':
+                        add = True
+                # elif token.content != u'\"':
+                #     self.span_on()
         self.span_off()
 
     def eliminate_pair_comma(self):
@@ -1239,6 +1281,13 @@ class Token:
 
     def end_of_span(self):
         return self.pos == u'COMMA'
+
+    def stupid_end_of_span(self):
+        if self.pos == u'COMMA':
+            return True
+        elif self.pos == u'C':
+            return True
+        return False
 
     def agree_pr_noun(self, noun):
         if noun.pos[0] == u'N':
