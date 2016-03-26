@@ -8,6 +8,7 @@ __author__ = u'gree-gorey'
 t1 = time.time()
 
 newCorpus = Corpus(u'/home/gree-gorey/Corpus/')
+# newCorpus = Corpus(u'/home/gree-gorey/CorpusTest/')
 
 for text in newCorpus.texts(u'txt'):
     # text.mystem_analyzer()

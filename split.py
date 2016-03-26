@@ -68,7 +68,7 @@ for text in newCorpus.texts(u'json'):
 
     text.write_clause_ann()
 
-    text.copy_into_brat()
+    text.copy_into_brat(u'/opt/brat-v1.3_Crunchy_Frog/data/right/')
 
 t2 = time.time()
 

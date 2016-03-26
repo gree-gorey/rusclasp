@@ -261,17 +261,26 @@ class Text:
 
         w.close()
 
+    def write_dummy_ann(self):
+        write_name = self.path.replace(u'txt', u'ann')
+        w = codecs.open(write_name, u'w', u'utf-8')
+        w.close()
+
     def write_pos_ann(self):
         name = self.path[:-3:] + u'json'
         w = codecs.open(name, u'w', u'utf-8')
         json.dump(self.analysis, w, ensure_ascii=False, indent=2)
         w.close()
 
-    def copy_into_brat(self):
-        text = self.path.replace(u'json', u'txt')
-        ann = self.path.replace(u'json', u'ann')
-        shutil.copy(text, u'/opt/brat-v1.3_Crunchy_Frog/data/right/' + text.split(u'/')[-1])
-        shutil.copy(ann, u'/opt/brat-v1.3_Crunchy_Frog/data/right/' + ann.split(u'/')[-1])
+    def copy_into_brat(self, path, dummy=False):
+        if dummy:
+            text = self.path
+            ann = self.path.replace(u'txt', u'ann')
+        else:
+            text = self.path.replace(u'json', u'txt')
+            ann = self.path.replace(u'json', u'ann')
+        shutil.copy(text, path + text.split(u'/')[-1])
+        shutil.copy(ann, path + ann.split(u'/')[-1])
 
     def normalize(self):
         self.result = self.result.replace(u' ', u' ')
