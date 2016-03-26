@@ -74,6 +74,8 @@ class EvaluatedText:
         self.tokens = tokens
         self.spans_gold = []
         self.spans_tested = []
+        self.relations_gold = []
+        self.relations_tested = []
         self.precision = 0
         self.recall = 0
 
@@ -87,6 +89,22 @@ class EvaluatedText:
                     break
         self.precision = float(match) / float(len(self.spans_tested))
         self.recall = float(match) / float(len(self.spans_gold))
+
+    def restore_split(self):
+        for r in sorted(self.relations_gold, reverse=True):
+            self.find_relation(r, self.spans_gold)
+
+        for r in sorted(self.relations_tested, reverse=True):
+            self.find_relation(r, self.spans_tested)
+
+    def find_relation(self, r, spans):
+        for span in spans:
+            if span.entity_number == r[0]:
+                for following_span in spans:
+                    if following_span.entity_number == r[1]:
+                        span.tokens += following_span.tokens
+                        spans.remove(following_span)
+                        return
 
     def get_spans(self):
         for span in self.spans_generator(self.ann_gold):
@@ -116,6 +134,22 @@ class EvaluatedText:
                                 break
 
                 yield new_span
+
+    def get_relations(self):
+        for r in self.relations_generator(self.ann_gold):
+            self.relations_gold.append(r)
+
+        for r in self.relations_generator(self.ann_tested):
+            self.relations_tested.append(r)
+
+    def relations_generator(self, annotation):
+        for line in annotation:
+            line = line.split(u'\t')
+            if line[0][0] == u'R':
+                arguments = line[1].split(u' ')
+                arg1 = int(arguments[1].split(u':')[1][1::])
+                arg2 = int(arguments[2].split(u':')[1][1::])
+                yield (arg1, arg2)
 
 
 class Text:

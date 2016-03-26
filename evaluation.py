@@ -13,6 +13,10 @@ def main():
 
     for evaluated_text in new_pair_corpora.annotations():
         evaluated_text.get_spans()
+
+        evaluated_text.get_relations()
+        evaluated_text.restore_split()
+
         evaluated_text.evaluate()
 
         # for span in evaluated_text.spans_gold:
