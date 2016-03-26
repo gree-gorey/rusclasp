@@ -10,8 +10,8 @@ def main():
     t1 = time.time()
 
     # new_corpus = Corpus(u'/home/gree-gorey/Corpus/')
-    # new_corpus = Corpus(u'/home/gree-gorey/tested/')
-    new_corpus = Corpus(u'/home/gree-gorey/stupid/')
+    new_corpus = Corpus(u'/home/gree-gorey/tested/')
+    # new_corpus = Corpus(u'/home/gree-gorey/stupid/')
 
     for text in new_corpus.texts(u'txt'):
         # text.mystem_analyzer()

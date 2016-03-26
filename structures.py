@@ -50,6 +50,13 @@ class PairCorpora:
     def __init__(self, path_to_gold, path_to_tested):
         self.path_to_gold = path_to_gold
         self.path_to_tested = path_to_tested
+        self.texts = []
+        self.precision = 0
+        self.recall = 0
+        self.f_value = 0
+        self.match = 0
+        self.length_gold = 0
+        self.length_tested = 0
 
     def annotations(self):
         for root, dirs, files in os.walk(self.path_to_gold):
@@ -66,6 +73,15 @@ class PairCorpora:
                         tokens = json.load(f)
                     yield EvaluatedText(ann_gold, ann_tested, tokens)
 
+    def evaluate(self):
+        for text in self.texts:
+            self.match += text.match
+            self.length_gold += len(text.spans_gold)
+            self.length_tested += len(text.spans_tested)
+        self.precision = float(self.match) / float(self.length_tested)
+        self.recall = float(self.match) / float(self.length_gold)
+        self.f_value = (self.precision + self.recall) / 2
+
 
 class EvaluatedText:
     def __init__(self, ann_gold, ann_tested, tokens):
@@ -76,20 +92,14 @@ class EvaluatedText:
         self.spans_tested = []
         self.relations_gold = []
         self.relations_tested = []
-        self.precision = 0
-        self.recall = 0
-        self.f_value = 0
+        self.match = 0
 
-    def evaluate(self):
-        match = 0
+    def count_match(self):
         for span_gold in self.spans_gold:
             for span_tested in self.spans_tested:
                 if span_gold.tokens == span_tested.tokens:
-                    match += 1
+                    self.match += 1
                     break
-        self.precision = float(match) / float(len(self.spans_tested))
-        self.recall = float(match) / float(len(self.spans_gold))
-        self.f_value = (self.precision + self.recall) / 2
 
     def restore_split(self):
         for r in sorted(self.relations_gold, reverse=True):
