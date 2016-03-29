@@ -908,15 +908,20 @@ class Sentence:
     def find_complimentizers(self):
         for i, token in enumerate(self.tokens):
             if token.content.lower() in myData.complex_complimentizers:
+                # print token.content
                 for item in myData.complex_complimentizers[token.content.lower()]:
                     end = i + item[1]
-                    if len(self.tokens) >= end + 1:
+                    if len(self.tokens) > end + 1:
+                        # print len(self.tokens), end + 1
                         new = [token]
                         j = i
                         while len(new) != item[1]:
                             j += 1
+                            # try:
                             if u'COMMA' not in self.tokens[j].pos:
                                 new.append(self.tokens[j])
+                            # except:
+                            # print u' '.join([token.content for token in self.tokens])
                         new_complimentizer = u' '.join([next_token.content.lower() for next_token in new])
 
                         # print new_complimentizer_lex, 2
