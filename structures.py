@@ -698,7 +698,7 @@ class Sentence:
     def restore_base(self):
         for i, span in reversed(list(enumerate(self.spans))):
             if span.basic:
-                # print span.tokens[0].content, span.finite()
+                # print span.tokens[1].content, span.finite()
                 if not span.finite() and not span.before_dash:
                     # print span.tokens[0].content
                     continue
@@ -745,8 +745,9 @@ class Sentence:
                             following_span.base = False
                             last_added = j
                             if span.before_dash:
-                                # print 1
-                                span.ellipsis = True
+                                if span.tokens[0].lex not in myData.specificators:
+                                    # print 1
+                                    span.ellipsis = True
                             continue
             # print span.tokens[0].content, following_span.tokens[1].content, 111, following_span.base, backward
             if following_span.basic and following_span.in_base is not backward and following_span.base is not backward:
@@ -804,8 +805,9 @@ class Sentence:
                             following_span.base = False
                             last_added = j
                             if span.before_dash:
-                                # print 1
-                                span.ellipsis = True
+                                if span.tokens[0].lex not in myData.specificators:
+                                    # print 1
+                                    span.ellipsis = True
 
             # if following_span.base:
             #     break
@@ -843,6 +845,7 @@ class Sentence:
                     find += self.find_coordination(span)
 
         if find:
+            # print 1
             self.spans = copy.deepcopy(self.new_spans)
 
     def split_base(self):
@@ -862,11 +865,14 @@ class Sentence:
         and_number = len([True for token in span.tokens if token.lex == u'и'])
         predicate_number = len([True for token in span.tokens if token.predicate()])
         if predicate_number > 1:
+            # print 1
             if and_number == 1:
+                # print 1
                 for i, token in reversed(list(enumerate(span.tokens))):
                     if token.lex == u'и':
                         if i > 0:
                             for j, following_token in enumerate(span.tokens[i+1::], start=i+1):
+                                # print following_token.content
                                 if following_token.lex == u'который':
                                     continue
                                 if following_token.predicate():
@@ -879,8 +885,11 @@ class Sentence:
                                     self.new_spans.append(new_span)
                                     return True
 
+                                # здесь написал continue т.к. есть случаи "это лишь опасения и он не придет"
                                 elif following_token.pos[0] != u'R':
-                                    return False
+                                    continue
+                                    # return False
+
             elif and_number > 1:
                 for i, token in reversed(list(enumerate(span.tokens))):
                     if token.lex == u'и':
@@ -1214,7 +1223,8 @@ class Span:
             if token.lex == u'—' or token.lex == u'-':
                 # print 1
                 # print u' '.join([token.content for token in self.shared_tokens]), token.content, token.lex
-                self.ellipsis = True
+                if self.tokens[0].lex not in myData.specificators:
+                    self.ellipsis = True
             elif token.lex == u'здесь':
                 self.null_copula = True
             if re.match(u'(N...n.)|(P....n.)|(M...[n-])', token.pos):
@@ -1293,6 +1303,7 @@ class Token:
         if re.match(u'(V.[cim].......)|(V.p....ps.)|(A.....s)', self.pos):
             return True
         if self.lex in myData.predicates:
+            # print self.lex
             return True
         return False
 

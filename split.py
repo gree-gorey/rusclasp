@@ -47,7 +47,7 @@ def main():
 
                 # decide whether span is inserted or embedded or neither
                 span.type()
-                # print span.tokens[0].content, span.before_dash
+                # print span.tokens[0].content, span.embedded_type
 
             # split embedded span if it contains > 1 predicate
             sentence.split_embedded()
@@ -61,9 +61,12 @@ def main():
             sentence.split_base()
 
             # for span in sentence.spans:
-            #     print span.shared_tokens[0].content, span.tokens[0].content, span.basic
+            #     print span.shared_tokens[0].content, span.tokens[0].content, span.finite()
 
             sentence.restore_base()
+
+            # for span in sentence.spans:
+            #     print span.shared_tokens[0].content, span.tokens[0].content, span.finite()
 
             for span in sentence.spans:
                 span.get_boundaries()

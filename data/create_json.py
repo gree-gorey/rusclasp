@@ -5,13 +5,13 @@ import json
 
 
 def create(type_of):
-    var = [u'predicates',
-           u'inserted',
-           u'complimentizers',
-           u'prepositions',
-           u'inserted_evidence',
-           u'complex_complimentizers',
-           u'specificators']
+    var = [u'predicates',  # 0
+           u'inserted',  # 1
+           u'complimentizers',  # 2
+           u'prepositions',  # 3
+           u'inserted_evidence',  # 4
+           u'complex_complimentizers',  # 5
+           u'specificators']  # 6
     result = None
     with codecs.open(var[type_of] + u'.csv', u'r', u'utf-8') as f:
         if type_of == 1:
@@ -45,7 +45,7 @@ def create(type_of):
                 result[line[0]] = line[1].split(u',')
     return var[type_of] + u'.json', result
 
-name, res = create(4)
+name, res = create(2)
 
 w = codecs.open(name, u'w', u'utf-8')
 json.dump(res, w, ensure_ascii=False, indent=2)
