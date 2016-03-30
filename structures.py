@@ -136,7 +136,7 @@ class EvaluatedText:
                 # print new_span.entity_number, new_span.begin
 
                 for token in self.tokens:
-                    if token[u'gr'] not in u',-SENT':
+                    if token[u'gr'] not in u'C,-SENT':
                         if token[u'begin'] >= new_span.begin:
                             if token[u'end'] <= new_span.end:
                                 new_span.tokens.append(token[u'text'])
@@ -382,12 +382,12 @@ class Text:
                 line = u'R' + str(j) + u'\t' + u'Split Arg1:T' + str(sentence.spans[r[0]].entity_number) +\
                        u' Arg2:T' + str(sentence.spans[r[1]].entity_number) + u'\t' + u'\n'
                 w.write(line)
-            for r in sentence.verb_relations:
-                # print sentence.spans[r[1]].entity_number
-                j += 1
-                line = u'R' + str(j) + u'\t' + u'Coordination Arg1:T' + str(sentence.spans[r[0]].entity_number) +\
-                       u' Arg2:T' + str(sentence.spans[r[1]].entity_number) + u'\t' + u'\n'
-                w.write(line)
+            # for r in sentence.verb_relations:
+            #     # print sentence.spans[r[1]].entity_number
+            #     j += 1
+            #     line = u'R' + str(j) + u'\t' + u'Coordination Arg1:T' + str(sentence.spans[r[0]].entity_number) +\
+            #            u' Arg2:T' + str(sentence.spans[r[1]].entity_number) + u'\t' + u'\n'
+            #     w.write(line)
 
         w.close()
 
@@ -576,8 +576,8 @@ class Sentence:
             if len(span.tokens) > 1:
                 if span.tokens[0].pos == u'C' and span.tokens[1].pos == u'C':
                     if span.tokens[0].lex in myData.complimentizers and span.tokens[1].lex in myData.complimentizers:
-                        new_span = Span()
-                        new_span.tokens += span.tokens[:1:]
+                        new_span = copy.deepcopy(span)
+                        new_span.tokens = span.tokens[:1:]
                         span.tokens.pop(0)
                         new.append(new_span)
             new.append(span)
@@ -723,9 +723,10 @@ class Sentence:
         last_added = i
         last_connected = i
         for j, following_span in enumerate(self.spans[i+1::], start=i+1):
-            if span.finite() and following_span.finite():
-                # print span.tokens[0].content
-                break
+            if following_span.basic:
+                if span.finite() and following_span.finite():
+                    # print span.tokens[0].content, following_span.tokens[0].content
+                    break
             if not backward:
                 # print 1
                 if following_span.basic and following_span.in_base is backward and following_span.base is backward:
@@ -1031,7 +1032,7 @@ class Span:
         # self.finite = False
 
     def incomplete(self):
-        if self.embedded_type == u'complement':
+        if self.embedded_type == u'complement' or self.embedded_type == u'relative':
             return not self.finite()
 
     def predicate_coordination(self, following_span):
@@ -1069,7 +1070,7 @@ class Span:
             # print token.content, 9000
             if following_span.tokens[0].lex == u'как':
                 return True
-            if token.predicate():
+            if token.predicate() or token.infinitive():
                 # print token.lex
                 return False
             else:
@@ -1085,7 +1086,7 @@ class Span:
     def find_right(self, token):
         for token_right in self.shared_tokens:
             # print token.content, token_right.content, 888
-            if token_right.predicate():
+            if token_right.predicate() or token_right.infinitive():
                 return False
             else:
                 if token.pos[0] in u'ANP' and token_right.pos[0] in u'ANP':
@@ -1131,13 +1132,13 @@ class Span:
                 if self.tokens[0].lex in myData.complimentizers:
                     if self.tokens[0].lex in myData.conditional_complimentizers:
                         # print self.tokens[0].lex, self.tokens[2].lex
-                        if self.finite():
+                        # if self.finite():
                             # print self.tokens[0].lex, self.tokens[2].lex, 777
-                            self.embedded_type = u'complement'
-                            self.complement_type = self.tokens[0].lex
-                            return True
-                        else:
-                            return False
+                        self.embedded_type = u'complement'
+                        self.complement_type = self.tokens[0].lex
+                        return True
+                        # else:
+                        #     return False
                     else:
                         self.embedded_type = u'complement'
                         self.complement_type = self.tokens[0].lex
@@ -1181,7 +1182,9 @@ class Span:
             if self.embedded_type == u'gerund' or self.embedded_type == u'participle':
                 return not other.finite() and not other.nominative()
             elif self.embedded_type == u'relative' or self.embedded_type == u'complement':
-                # print self.finite(), other.finite(), 111, other.tokens[0].content
+                if self.incomplete():
+                    return True
+                # print self.finite(), other.finite(), 111, self.tokens[0].content, other.tokens[0].content
                 if not(self.finite() and other.finite()):
                     return not other.begin_with_and()
                 else:
@@ -1214,7 +1217,7 @@ class Span:
             if re.match(u'(V.[imc].......)|(V.p....ps.)|(A.....s)', token.pos):
                 # print u' '.join([token.content for token in self.shared_tokens])
                 return True
-            elif re.match(u'V.n.......', token.pos) and self.shared_tokens[0].lex == u'чтобы':
+            elif re.match(u'V.n.......', token.pos) and self.shared_tokens[0].lex in [u'чтобы', u'перед тем как']:
                 # print self.shared_tokens[0].content
                 return True
             if token.lex in myData.predicates:
