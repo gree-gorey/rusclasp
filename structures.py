@@ -784,9 +784,15 @@ class Sentence:
                     # print span.tokens[0].content, following_span.tokens[0].content,\
                     #     span.accept_base(following_span), span.coordinate(following_span)
                     # print span.tokens[0].content
-                    # print span.before_dash, span.finite(), following_span.finite()
+                    """
+                    Было и работало неверно:
+                    print span.before_dash, span.finite(), following_span.finite()
                     if (span.before_dash and not span.finite() and not following_span.finite()) or\
                             (not span.before_dash and (span.finite() or following_span.finite())):
+                    """
+                    # print span.before_dash, span.finite(), following_span.finite()
+                    if (span.before_dash and not span.finite() and not following_span.finite()) or\
+                            (not following_span.finite()):
                         # print 1
                         if span.accept_base(following_span) and span.coordinate(following_span):
                             # print span.tokens[0].content, following_span.tokens[0].content, 777, j
