@@ -728,7 +728,8 @@ class Sentence:
                     # print span.tokens[0].content, following_span.tokens[0].content
                     break
             if not backward:
-                # print 1
+                # print span.tokens[0].content
+                # print following_span.basic, following_span.in_base, following_span.base, backward
                 if following_span.basic and following_span.in_base is backward and following_span.base is backward:
                     # print span.tokens[0].content, following_span.tokens[0].content, 555, j
 
@@ -746,11 +747,12 @@ class Sentence:
                             following_span.base = False
                             last_added = j
                             if span.before_dash:
+                                span.after_dash = True
                                 if span.tokens[0].lex not in myData.specificators:
                                     # print 1
                                     span.ellipsis = True
                             continue
-            # print span.tokens[0].content, following_span.tokens[1].content, 111, following_span.base, backward
+            # print span.tokens[0].content, following_span.tokens[0].content, 111, following_span.base, following_span.in_base, backward
             if following_span.basic and following_span.in_base is not backward and following_span.base is not backward:
                 # print span.tokens[0].content, following_span.tokens[0].content, 555, j
 
@@ -783,32 +785,47 @@ class Sentence:
 
                 # если это ПРИМЫКАЮЩИЙ спан!!!
                 else:
-                    # print span.tokens[0].content, following_span.tokens[0].content,\
-                    #     span.accept_base(following_span), span.coordinate(following_span)
-                    # print span.tokens[0].content
-                    """
-                    Было и работало неверно:
-                    print span.before_dash, span.finite(), following_span.finite()
-                    if (span.before_dash and not span.finite() and not following_span.finite()) or\
-                            (not span.before_dash and (span.finite() or following_span.finite())):
-                    """
-                    # print span.before_dash, span.finite(), following_span.finite()
-                    if (span.before_dash and not span.finite() and not following_span.finite()) or\
-                            (not following_span.finite()):
-                        # print 1
+                    if span.after_dash:
                         if span.accept_base(following_span) and span.coordinate(following_span):
                             # print span.tokens[0].content, following_span.tokens[0].content, 777, j
                             # print following_span.tokens[0].content, backward
+                            span.ellipsis = False
+                            span.base = False
+                            span.in_base = False
                             span.tokens += following_span.tokens
                             span.shared_tokens += following_span.tokens
                             span.before_dash += following_span.before_dash
                             following_span.in_base = True
                             following_span.base = False
                             last_added = j
-                            if span.before_dash:
-                                if span.tokens[0].lex not in myData.specificators:
-                                    # print 1
-                                    span.ellipsis = True
+                    else:
+                        # print span.tokens[0].content, following_span.tokens[0].content,\
+                        #     span.accept_base(following_span), span.coordinate(following_span)
+                        # print span.tokens[0].content
+                        """
+                        Было и работало неверно:
+                        print span.before_dash, span.finite(), following_span.finite()
+                        if (span.before_dash and not span.finite() and not following_span.finite()) or\
+                                (not span.before_dash and (span.finite() or following_span.finite())):
+                        """
+                        # print span.before_dash, span.finite(), following_span.finite()
+                        if (span.before_dash and not span.finite() and not following_span.finite()) or\
+                                (not (span.finite() and following_span.finite())):
+                            # print 1
+                            if span.accept_base(following_span) and span.coordinate(following_span):
+                                # print span.tokens[0].content, following_span.tokens[0].content, 777, j
+                                # print following_span.tokens[0].content, backward
+                                span.tokens += following_span.tokens
+                                span.shared_tokens += following_span.tokens
+                                span.before_dash += following_span.before_dash
+                                following_span.in_base = True
+                                following_span.base = False
+                                last_added = j
+                                if span.before_dash:
+                                    span.after_dash = True
+                                    if span.tokens[0].lex not in myData.specificators:
+                                        # print 1
+                                        span.ellipsis = True
 
             # if following_span.base:
             #     break
@@ -820,8 +837,10 @@ class Sentence:
     def split_embedded(self):
         find = False
         for span in self.spans:
+            # print span.basic, span.tokens[0].content
             self.new_spans.append(span)
             if span.embedded:
+                # print span.embedded_type
                 find_gerund = False
                 if span.embedded_type == u'gerund':
                     if span.gerund > 1:
@@ -842,8 +861,34 @@ class Sentence:
                                         self.new_spans[-1].tokens = span.tokens[:i:]
                                         self.new_spans.append(new_span)
                                         break
+                find_participle = False
+                if span.embedded_type == u'participle':
+                    # print span.participle_number()
+                    if span.participle_number() > 1:
+                        # print 1
+                        for i, token in reversed(list(enumerate(span.tokens))):
+                            if len(token.pos) > 2:
+                                if token.pos[0] == u'V':
+                                    if token.pos[2] == u'p':
+                                        find_participle = True
+                                        find += True
+                            elif token.lex == u'и':
+                                if find_participle:
+                                    if i > 0:
+                                        new_span = Span()
+                                        new_span.embedded = True
+                                        new_span.embedded_type = span.embedded_type
+                                        for following_token in span.tokens[i::]:
+                                            new_span.tokens.append(following_token)
+                                        self.new_spans[-1].tokens = span.tokens[:i:]
+                                        self.new_spans.append(new_span)
+                                        break
                 else:
                     find += self.find_coordination(span)
+
+            else:
+                # print span.tokens[0].content
+                find += self.find_coordination(span)
 
         if find:
             # print 1
@@ -862,11 +907,14 @@ class Sentence:
             # print u'\n'.join([span.tokens[1].content for span in self.new_spans])
             self.spans = copy.deepcopy(self.new_spans)
 
-    def split_spans(self, span, i):
+    def split_spans(self, span, i, embedded_type=None):
         # print following_token.content
         new_span = copy.deepcopy(span)
         new_span.tokens = span.tokens[i::]
         new_span.shared_tokens = span.shared_tokens[i::]
+        if embedded_type:
+            new_span.embedded = True
+            new_span.embedded_type = embedded_type
         span.tokens = span.tokens[:i:]
         span.shared_tokens = span.shared_tokens[:i:]
         self.new_spans.append(new_span)
@@ -877,10 +925,11 @@ class Sentence:
         predicate_number = len([True for token in span.tokens if token.predicate()])
         infinitive_number = len([True for token in span.tokens if token.infinitive()])
         predicate_after_and = len([True for i, token in enumerate(span.tokens[:-1:]) if token.lex == u'и' and
-                                   (span.tokens[i+1].predicate() or span.tokens[i+1].infinitive())])
+                                   (span.tokens[i+1].predicate() or span.tokens[i+1].infinitive() or
+                                    span.tokens[i+1].gerund_participle())])
 
         # Это для ФИНИТНЫХ ПРЕДИКАТОВ
-        # # print span.tokens[0].content, predicate_number, predicate_after_and
+        # print span.tokens[0].content, predicate_number, predicate_after_and
         if predicate_number > 1 or predicate_after_and:
             # # print 1
             # if and_number == 1 or predicate_after_and:
@@ -924,24 +973,6 @@ class Sentence:
         # Это для ИНФИНИТИВОВ
         # print span.tokens[0].content, predicate_number
         if infinitive_number > 1 or (predicate_after_and and not span.finite() and infinitive_number < 2):
-            # print 1
-            # if and_number == 1 or (predicate_after_and and not span.finite() and infinitive_number < 2):
-            #     # print 1
-            #     for i, token in reversed(list(enumerate(span.tokens))):
-            #         if token.lex == u'и':
-            #             if i > 0:
-            #                 for j, following_token in enumerate(span.tokens[i+1::], start=i+1):
-            #                     # print following_token.content
-            #                     if following_token.lex == u'который':
-            #                         continue
-            #                     if following_token.infinitive():
-            #                         return self.split_spans(span, i)
-            #
-            #                     # здесь написал continue т.к. есть случаи "это лишь опасения и он не придет"
-            #                     elif following_token.pos[0] != u'R':
-            #                         continue
-            #                         # return False
-            # elif and_number > 1:
             for i, token in reversed(list(enumerate(span.tokens))):
                 if token.lex == u'и':
                     if i > 0:
@@ -959,6 +990,33 @@ class Sentence:
                                 #     continue
                                 if following_token.infinitive():
                                     return self.split_spans(span, i)
+
+                                # elif following_token.pos[0] != u'R':
+                                #     return False
+
+        # Это для ПРИЧАСТИЙ
+        """
+        Я себя хочу убить за такое рукожопие, но пока так
+        """
+        # print span.tokens[0].content, predicate_number, predicate_after_and
+        if predicate_after_and:
+            for i, token in reversed(list(enumerate(span.tokens))):
+                if token.lex == u'и':
+                    if i > 0:
+                        left_span = Span()
+                        left_span.tokens = left_span.shared_tokens = span.tokens[:i:]
+                        right_span = Span()
+                        right_span.tokens = right_span.shared_tokens = span.tokens[i+1::]
+                        if left_span.coordinate(right_span):
+                            # print left_span.tokens[-1].content, right_span.tokens[0].content
+                            continue
+                        else:
+                            # print 1
+                            for j, following_token in enumerate(span.tokens[i+1::], start=i+1):
+                                # if following_token.lex == u'который':
+                                #     continue
+                                if following_token.gerund_participle():
+                                    return self.split_spans(span, i, embedded_type=u'participle')
 
                                 # elif following_token.pos[0] != u'R':
                                 #     return False
@@ -1064,10 +1122,12 @@ class Span:
         self.inserted = False
         self.indicative = False
         self.gerund = 0
+        self.participle = 0
         self.relative = 0
         self.inside_quotes = False
         self.semicolon = False
         self.before_dash = False
+        self.after_dash = False
         self.before_colon = False
         self.complement_type = None
         self.null_copula = False
@@ -1204,7 +1264,7 @@ class Span:
                 self.embedded_type = u'relative'
                 return True
 
-            if self.gerund > 0 and not self.indicative:
+            if self.gerund > 0 and not self.finite():
                 self.embedded_type = u'gerund'
                 return True
             elif self.relative > 0:
@@ -1222,6 +1282,8 @@ class Span:
                         return True
                 else:
                     return False
+
+        return False
 
     def accept_embedded(self, other):
         if self.inside_quotes is other.inside_quotes:
@@ -1254,6 +1316,13 @@ class Span:
                 # print token.content
                 return True
         return False
+
+    def participle_number(self):
+        for token in self.shared_tokens:
+            if re.match(u'V.p.+', token.pos):
+                # print token.content
+                self.participle += 1
+        return self.participle
 
     def finite(self):
         nominative = 0
@@ -1359,6 +1428,11 @@ class Token:
             # print self.content
             return True
         return False
+
+    def gerund_participle(self):
+        if re.match(u'V.[gp].......', self.pos):
+            # print self.pos, self.content
+            return True
 
     def infinitive(self):
         if re.match(u'V.n.......', self.pos):
