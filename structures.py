@@ -24,7 +24,7 @@ class Data:
         self.inserted_evidence = json.load(codecs.open(u'./data/inserted_evidence.json', u'r', u'utf-8'))
         self.complex_complimentizers = json.load(codecs.open(u'./data/complex_complimentizers.json', u'r', u'utf-8'))
         self.specificators = json.load(codecs.open(u'./data/specificators.json', u'r', u'utf-8'))
-        self.conditional_complimentizers = [u'а', u'как', u'то есть']
+        self.conditional_complimentizers = [u'а', u'как', u'то есть', u'а также']
 
 myData = Data()
 
@@ -862,11 +862,25 @@ class Sentence:
             # print u'\n'.join([span.tokens[1].content for span in self.new_spans])
             self.spans = copy.deepcopy(self.new_spans)
 
+    def split_spans(self, span, i):
+        # print following_token.content
+        new_span = copy.deepcopy(span)
+        new_span.tokens = span.tokens[i::]
+        new_span.shared_tokens = span.shared_tokens[i::]
+        span.tokens = span.tokens[:i:]
+        span.shared_tokens = span.shared_tokens[:i:]
+        self.new_spans.append(new_span)
+        return True
+
     def find_coordination(self, span):
         and_number = len([True for token in span.tokens if token.lex == u'и'])
         predicate_number = len([True for token in span.tokens if token.predicate()])
+        infinitive_number = len([True for token in span.tokens if token.infinitive()])
         predicate_after_and = len([True for i, token in enumerate(span.tokens[:-1:]) if token.lex == u'и' and
-                                   span.tokens[i+1].predicate()])
+                                   (span.tokens[i+1].predicate() or span.tokens[i+1].infinitive())])
+
+        # Это для ФИНИТНЫХ ПРЕДИКАТОВ
+        # print span.tokens[0].content, predicate_number
         if predicate_number > 1 or predicate_after_and:
             # print 1
             if and_number == 1 or predicate_after_and:
@@ -879,20 +893,12 @@ class Sentence:
                                 if following_token.lex == u'который':
                                     continue
                                 if following_token.predicate():
-                                    # print following_token.content
-                                    new_span = copy.deepcopy(span)
-                                    new_span.tokens = span.tokens[i::]
-                                    new_span.shared_tokens = span.shared_tokens[i::]
-                                    span.tokens = span.tokens[:i:]
-                                    span.shared_tokens = span.shared_tokens[:i:]
-                                    self.new_spans.append(new_span)
-                                    return True
+                                    return self.split_spans(span, i)
 
                                 # здесь написал continue т.к. есть случаи "это лишь опасения и он не придет"
                                 elif following_token.pos[0] != u'R':
                                     continue
                                     # return False
-
             elif and_number > 1:
                 for i, token in reversed(list(enumerate(span.tokens))):
                     if token.lex == u'и':
@@ -910,17 +916,53 @@ class Sentence:
                                     # if following_token.lex == u'который':
                                     #     continue
                                     if following_token.predicate():
-                                        # print following_token.content
-                                        new_span = copy.deepcopy(span)
-                                        new_span.tokens = span.tokens[i::]
-                                        new_span.shared_tokens = span.shared_tokens[i::]
-                                        span.tokens = span.tokens[:i:]
-                                        span.shared_tokens = span.shared_tokens[:i:]
-                                        self.new_spans.append(new_span)
-                                        return True
+                                        return self.split_spans(span, i)
 
                                     # elif following_token.pos[0] != u'R':
                                     #     return False
+
+        # Это для ИНФИНИТИВОВ
+        # print span.tokens[0].content, predicate_number
+        if infinitive_number > 1 or (predicate_after_and and not span.finite() and infinitive_number < 2):
+            # print 1
+            if and_number == 1 or (predicate_after_and and not span.finite() and infinitive_number < 2):
+                # print 1
+                for i, token in reversed(list(enumerate(span.tokens))):
+                    if token.lex == u'и':
+                        if i > 0:
+                            for j, following_token in enumerate(span.tokens[i+1::], start=i+1):
+                                # print following_token.content
+                                if following_token.lex == u'который':
+                                    continue
+                                if following_token.infinitive():
+                                    return self.split_spans(span, i)
+
+                                # здесь написал continue т.к. есть случаи "это лишь опасения и он не придет"
+                                elif following_token.pos[0] != u'R':
+                                    continue
+                                    # return False
+            elif and_number > 1:
+                for i, token in reversed(list(enumerate(span.tokens))):
+                    if token.lex == u'и':
+                        if i > 0:
+                            left_span = Span()
+                            left_span.tokens = left_span.shared_tokens = span.tokens[:i:]
+                            right_span = Span()
+                            right_span.tokens = right_span.shared_tokens = span.tokens[i+1::]
+                            if left_span.coordinate(right_span):
+                                # print left_span.tokens[-1].content, right_span.tokens[0].content
+                                continue
+                            else:
+                                # print 1
+                                for j, following_token in enumerate(span.tokens[i+1::], start=i+1):
+                                    # if following_token.lex == u'который':
+                                    #     continue
+                                    if following_token.infinitive():
+                                        return self.split_spans(span, i)
+
+                                    # elif following_token.pos[0] != u'R':
+                                    #     return False
+
         return False
 
     def find_complimentizers(self):
@@ -1132,15 +1174,15 @@ class Span:
                     return True
                 # print self.tokens[0].content
                 if self.tokens[0].lex in myData.complimentizers:
-                    if self.tokens[0].lex in myData.conditional_complimentizers:
-                        # print self.tokens[0].lex, self.tokens[2].lex
-                        # if self.finite():
+                    if self.tokens[0].lex in myData.conditional_complimentizers and len(self.tokens) > 1:
+                        # print self.tokens[0].lex, self.tokens[1].lex
+                        if self.finite():
                             # print self.tokens[0].lex, self.tokens[2].lex, 777
-                        self.embedded_type = u'complement'
-                        self.complement_type = self.tokens[0].lex
-                        return True
-                        # else:
-                        #     return False
+                            self.embedded_type = u'complement'
+                            self.complement_type = self.tokens[0].lex
+                            return True
+                        else:
+                            return False
                     else:
                         self.embedded_type = u'complement'
                         self.complement_type = self.tokens[0].lex
@@ -1216,15 +1258,19 @@ class Span:
         for i, token in enumerate(self.shared_tokens):
             # print u' '.join([token.content for token in self.shared_tokens])
             # print token.pos, token.content, 777, token.lex
-            if re.match(u'(V.[imc].......)|(V.p....ps.)|(A.....s)', token.pos):
-                # print u' '.join([token.content for token in self.shared_tokens])
+            if token.predicate():
                 return True
+            elif token.infinitive() and self.shared_tokens[0].lex == u'и':
+                return True
+            # if re.match(u'(V.[imc].......)|(V.p....ps.)|(A.....s)', token.pos):
+            #     # print u' '.join([token.content for token in self.shared_tokens])
+            #     return True
             elif re.match(u'V.n.......', token.pos) and self.shared_tokens[0].lex in [u'чтобы', u'перед тем как']:
                 # print self.shared_tokens[0].content
                 return True
-            if token.lex in myData.predicates:
-                # print self.shared_tokens[0].content
-                return True
+            # if token.lex in myData.predicates:
+            #     # print self.shared_tokens[0].content
+            #     return True
             if token.lex == u'—' or token.lex == u'-':
                 # print 1
                 # print u' '.join([token.content for token in self.shared_tokens]), token.content, token.lex
@@ -1304,11 +1350,11 @@ class Token:
         return True
 
     def predicate(self):
-        # if re.match(u'(V.[imc].......)|(V.p....ps.)|(A.....s)', self.pos):
         if re.match(u'(V.[cim].......)|(V.p....ps.)|(A.....s)', self.pos):
+            # print self.pos, self.content
             return True
         if self.lex in myData.predicates:
-            # print self.lex
+            # print self.content
             return True
         return False
 
