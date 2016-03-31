@@ -11,6 +11,7 @@ def main():
 
     new_pair_corpora = PairCorpora(u'/opt/brat-v1.3_Crunchy_Frog/data/gold/', u'/home/gree-gorey/tested/')
     # new_pair_corpora = PairCorpora(u'/opt/brat-v1.3_Crunchy_Frog/data/gold/', u'/home/gree-gorey/stupid/')
+    # new_pair_corpora = PairCorpora(u'/opt/brat-v1.3_Crunchy_Frog/data/gold_training/', u'/home/gree-gorey/tested_tested/')
 
     for evaluated_text in new_pair_corpora.annotations():
         evaluated_text.get_spans()

@@ -11,6 +11,7 @@ def main():
 
     new_corpus = Corpus(u'/home/gree-gorey/Corpus/')
     # new_corpus = Corpus(u'/home/gree-gorey/tested/')
+    # new_corpus = Corpus(u'/home/gree-gorey/tested_tested/')
 
     for text in new_corpus.texts(u'json'):
         text.sentence_splitter()
