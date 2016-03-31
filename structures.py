@@ -136,7 +136,7 @@ class EvaluatedText:
                 # print new_span.entity_number, new_span.begin
 
                 for token in self.tokens:
-                    if token[u'gr'] not in u'C,-SENT':
+                    if token[u'gr'] not in u'CR,-SENT':
                         if token[u'begin'] >= new_span.begin:
                             if token[u'end'] <= new_span.end:
                                 new_span.tokens.append(token[u'text'])
@@ -859,15 +859,17 @@ class Sentence:
                 span.basic = True
                 find += self.find_coordination(span)
         if find:
-            # print self.new_spans
+            # print u'\n'.join([span.tokens[1].content for span in self.new_spans])
             self.spans = copy.deepcopy(self.new_spans)
 
     def find_coordination(self, span):
         and_number = len([True for token in span.tokens if token.lex == u'и'])
         predicate_number = len([True for token in span.tokens if token.predicate()])
-        if predicate_number > 1:
+        predicate_after_and = len([True for i, token in enumerate(span.tokens[:-1:]) if token.lex == u'и' and
+                                   span.tokens[i+1].predicate()])
+        if predicate_number > 1 or predicate_after_and:
             # print 1
-            if and_number == 1:
+            if and_number == 1 or predicate_after_and:
                 # print 1
                 for i, token in reversed(list(enumerate(span.tokens))):
                     if token.lex == u'и':
