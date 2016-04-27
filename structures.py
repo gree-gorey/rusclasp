@@ -45,6 +45,12 @@ class Corpus:
                             result = f.read()
                     yield Text(result, open_name)
 
+    def size(self):
+        tokens = 0
+        for text in self.texts(u'json'):
+            tokens += len(text.result)
+        return tokens
+
 
 class PairCorpora:
     def __init__(self, path_to_gold, path_to_tested):
