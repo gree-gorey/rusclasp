@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>rusclasp: Russian Clause Splitter</title>
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href='https://fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/normalize.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/skeleton.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/custom.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style-vis.css') }}"/>
+
+  <!-- Scripts
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+{#    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>#}
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/smoothscroll.js') }}"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='js/head.js') }}"></script>
+
+    <!-- load all the libraries upfront, which takes forever -->
+    <script type="text/javascript" src="{{ url_for('static', filename='js/brat_loader.js') }}"></script>
+
+    <!-- let's do the configuration -->
+        <script type="text/javascript">
+        var collData = {
+            entity_types: [ {
+                    type   : 'Span',
+                    labels : ['Span', 'Span'],
+                    bgColor: '#8dbe6f',
+                    borderColor: 'darken'
+            } ],
+            relation_types: [ {
+                    type   : 'Split',
+                    labels : ['Split', 'Split'],
+                    args   : [ {role: 'LeftSpan', targets: ['Span'] },
+                               {role: 'RightSpan', targets: ['Span'] }
+                             ]
+            } ]
+        };
+        </script>
+
+        <!-- we simply call it inside a script element -->
+        <script type="text/javascript">
+        var docData = {
+            text     : "Вы можете, введя свое предложение, проверить работу программы. Напишите здесь текст, который вы хотите разбить на предикации.",
+            entities : [
+                ['T1', 'Span', [[0, 2]]]
+            ],
+            relations : [
+{#                ['R1', 'Split', [['LeftSpan', 'T1'], ['RightSpan', 'T3']]]#}
+            ]
+        };
+        </script>
+
+        <script type="text/javascript">
+            head.ready(function() {
+                // Evaluate the code from the example (with ID
+                // 'embedding-entity-example') and show it to the user
+                Util.embed('embedding-entity-example', $.extend({}, collData),
+                        $.extend({}, docData), webFontURLs);
+            });
+        </script>
+
+        <script type=text/javascript>
+
+            $body = $("body");
+
+{#            if ( $( "svg" ).length ) {#}
+{#                $body.removeClass("loading");#}
+{#            }#}
+
+{#            $("#sentum").ready(function(){#}
+{#                alert("I showed up");#}
+{#                console.log("I showed up");#}
+{#                $body.removeClass("loading");#}
+{#            });#}
+
+            $(function() {
+                $body = $("body");
+              $('a#split').bind('click', function() {
+                  $body.addClass("loading");
+                $.getJSON('/_split_sentence', {
+                  sentence: $('textarea[name="sentence"]').val()
+                }, function(data) {
+
+                    docData["text"] = data.result[0];
+
+                    document.getElementById("embedding-entity-example").setAttribute("class", "");
+                    document.getElementById("embedding-entity-example").setAttribute("style", "");
+                    document.getElementById("embedding-entity-example").innerHTML = "";
+
+                    head.ready(function() {
+                        // Evaluate the code from the example (with ID
+                        // 'embedding-entity-example') and show it to the user
+                        Util.embed('embedding-entity-example', $.extend({}, collData),
+                                $.extend({}, docData), webFontURLs);
+                    });
+
+
+
+                }).done(function() {
+                   $body.removeClass("loading");
+
+                });
+                return false;
+              });
+            });
+
+
+        </script>
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="../../dist/images/favicon.png">
+
+</head>
+<body class>
+
+{#    <script type=text/javascript>#}
+{##}
+{#            $body = $("body");#}
+{#            $body.addClass("loading");#}
+{##}
+{#    </script>#}
+
+    <a href="https://github.com/gree-gorey/rusclasp" target="_blank"><img style="position: fixed; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/652c5b9acfaddf3a9c326fa6bde407b87f7be0f4/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6f72616e67655f6666373630302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"></a>
+
+  <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+
+  <div class="section section-header values">
+    <div class="container">
+      <h1 class="section-heading">rusclasp</h1>
+      <br/>
+      <p class="section-description">rusclasp — Russian Clause Splitter — is a <span style="font-variant: small-caps;">python</span> module for automatic clause detection, segmentation sentences into clauses and restoring of split predications</p>
+      <br/>
+      <br/>
+      <a class="button button-primary smoothScroll" href="#demo">Demonstration</a>
+    </div>
+  </div>
+
+  <div class="section get-help">
+    <div class="container">
+        <div class="row">
+            <div class="four columns">
+                <a class="button u-full-width" href="http://rusclasp.readthedocs.io/en/latest/?badge=latest" target="_blank">Documentation</a>
+            </div>
+            <div class="four columns">
+                <a class="button u-full-width" href="https://github.com/gree-gorey/rusclasp" target="_blank">Download</a>
+            </div>
+            <div class="four columns">
+                <a class="button u-full-width smoothScroll" href="#description">Description</a>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <div class="section section-demo categories">
+    <div class="container">
+      <h1 class="section-heading" id="demo">demo</h1>
+      <br/>
+      <p class="section-description">here you can try it out. Enter some text into the textarea below and click the button.
+      Be patient. It may take 3 to 10 seconds (most of it is spent on POS-tagging with <span style="font-variant: small-caps;">TreeTagger</span>).</p>
+      <br/>
+      <form>
+          <textarea rows="50" class="u-full-width" placeholder="Your text to split..." id="example" name="sentence">Вы можете, введя свое предложение, проверить работу программы. Напишите здесь текст, который вы хотите разбить на предикации.</textarea>
+          <a href="javascript:void();" class="button button-primary" id="split">Split it!</a>
+      </form>
+        <div class="white">
+            <div id="embedding-entity-example"></div>
+        </div>
+        
+    </div>
+  </div>
+  
+  <div class="section section-brat">
+    <div class="container">
+        
+        <h1 class="section-heading" id="description">description</h1>
+        <br/>
+          <p class="section-description">here you can try it out. Enter some text into the textarea below and click the button.
+          Be patient. It may take 3 to 10 seconds (most of it is spent on POS-tagging with <span style="font-variant: small-caps;">TreeTagger</span>).</p>
+          <br/>
+        
+    </div>
+  </div>
+    
+  <div class="section-footer">
+    <div class="container">
+      <p>gree-gorey &#169; 2016</p>
+    </div>
+  </div>
+
+
+<div class="modal"></div>
+
+<!-- End Document
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+
+        <script type=text/javascript>
+            $( document ).ajaxStart(function() {
+              $( ".log" ).text( "Triggered ajaxStart handler." );
+            });
+
+            $( ".trigger" ).click(function() {
+              $( ".result" ).load( "{{ url_for('static', filename='ajax/test.html') }}" );
+            });
+        </script>
+
+
+</head>
+<body>
+
+
+        <div class="trigger">Trigger</div>
+        <div class="result"></div>
+        <div class="log"></div>
+
+
+</body>
+</html>
