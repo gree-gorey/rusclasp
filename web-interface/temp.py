@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 
-from rusclasp import rusclasp
+import rusclasp
 import time
 
 __author__ = 'gree-gorey'
