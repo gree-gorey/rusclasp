@@ -15,6 +15,6 @@ result = s.split(sentence)
 
 t2 = time.time()
 
-print result[u'text']
+print result
 
 print t2 - t1
