@@ -7,7 +7,6 @@ import json
 import codecs
 import shutil
 import treetaggerwrapper
-# from pymystem3 import Mystem
 
 __author__ = u'gree-gorey'
 
@@ -15,7 +14,6 @@ __author__ = u'gree-gorey'
 class Data:
     def __init__(self):
         self.t = treetaggerwrapper.TreeTagger(TAGLANG=u'ru')
-        # self.m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
         self.path = os.path.dirname(os.path.abspath(__file__))
 
@@ -204,17 +202,6 @@ class Text:
         self.sentences = []
         self.sentence = False
         self.analysis = None
-
-    def mystem_analyzer(self):
-        self.result = self.result.replace(u' ', u' ')
-        # self.analysis = myData.m.analyze(self.result)
-        position = 0
-        if self.analysis[-1][u'text'] == u'\n':
-            del self.analysis[-1]
-        for token in self.analysis:
-            token[u'begin'] = position
-            position += len(token[u'text'])
-            token[u'end'] = position
 
     def treetagger_analyzer(self):
         # self.result = self.result.replace(u' ', u' ')
