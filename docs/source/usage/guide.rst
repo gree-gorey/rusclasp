@@ -7,7 +7,7 @@
 
 Для установки используйте pip:
 
-.. code-block::
+.. code-block:: python
 
    pip install rusclasp
 
@@ -31,7 +31,7 @@
 
 У метода :code:`split` есть необязательный аргумент :code:`mode`, значение которого по умолчанию :code:`mode='json'`. В таком режиме он возвращает в переменную :code:`result` словарь со следующей схемой:
 
-.. code-block::
+.. code-block:: python
 
    { 'text': "Текст, который вы разбиваете.",
      'entities': [

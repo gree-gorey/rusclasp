@@ -57,11 +57,37 @@
 <h1>Руководство пользователя<a class="headerlink" href="#id1" title="Ссылка на этот заголовок">¶</a></h1>
 <div class="section" id="id2">
 <h2>Установка<a class="headerlink" href="#id2" title="Ссылка на этот заголовок">¶</a></h2>
-<p>Установки пока нет.</p>
+<p>Для установки используйте pip:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">rusclasp</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="id3">
 <h2>Разбиение предикаций<a class="headerlink" href="#id3" title="Ссылка на этот заголовок">¶</a></h2>
-<p>Здесь будет скоро описание.</p>
+<p>Разбиение на предикации представляет собой разбиение текста на отрезки, содержащие один финитный предикат (возможно, нулевой) и его зависимые. При этом предикации, разорванные вложением, восстанавливаются.</p>
+<p>Разбиение происходит следующим образом:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">rusclasp</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">rusclasp</span><span class="o">.</span><span class="n">Splitter</span><span class="p">()</span>
+
+<span class="n">sentence</span> <span class="o">=</span> <span class="s1">u&#39;Вы можете, введя свое предложение, проверить работу программы.&#39;</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>У метода <code class="code docutils literal"><span class="pre">split</span></code> есть необязательный аргумент <code class="code docutils literal"><span class="pre">mode</span></code>, значение которого по умолчанию <code class="code docutils literal"><span class="pre">mode='json'</span></code>. В таком режиме он возвращает в переменную <code class="code docutils literal"><span class="pre">result</span></code> словарь со следующей схемой:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="s1">&#39;text&#39;</span><span class="p">:</span> <span class="s2">&quot;Текст, который вы разбиваете.&quot;</span><span class="p">,</span>
+  <span class="s1">&#39;entities&#39;</span><span class="p">:</span> <span class="p">[</span>
+                 <span class="p">[</span><span class="s1">&#39;T1&#39;</span><span class="p">,</span> <span class="s1">&#39;Span&#39;</span><span class="p">,</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]],</span>
+                 <span class="p">[</span><span class="s1">&#39;T2&#39;</span><span class="p">,</span> <span class="s1">&#39;Span&#39;</span><span class="p">,</span> <span class="p">[[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">]]],</span>
+                 <span class="p">[</span><span class="s1">&#39;T3&#39;</span><span class="p">,</span> <span class="s1">&#39;Span&#39;</span><span class="p">,</span> <span class="p">[[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">]]]</span>
+              <span class="p">],</span>
+  <span class="s1">&#39;relations&#39;</span><span class="p">:</span> <span class="p">[</span>
+                  <span class="p">[</span><span class="s1">&#39;R1&#39;</span><span class="p">,</span> <span class="s1">&#39;Split&#39;</span><span class="p">,</span> <span class="p">[[</span><span class="s1">&#39;LeftSpan&#39;</span><span class="p">,</span> <span class="s1">&#39;T1&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;RightSpan&#39;</span><span class="p">,</span> <span class="s1">&#39;T3&#39;</span><span class="p">]]]</span>
+               <span class="p">]</span>
+ <span class="p">}</span>
+</pre></div>
+</div>
 </div>
 </div>
 

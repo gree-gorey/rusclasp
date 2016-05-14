@@ -23,5 +23,5 @@ rusclasp_ — это python модуль, позволяющий разбива�
 
 
 .. _rusclasp: https://github.com/gree-gorey/rusclasp
-.. _github: https://github.com/gree-gorey/rusclaspv
+.. _github: https://github.com/gree-gorey/rusclasp
 .. _баг-трекер: https://github.com/gree-gorey/rusclasp/issues
