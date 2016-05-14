@@ -12,6 +12,8 @@ Clause splitter for Russian language.
   :target: https://pypi.python.org/pypi/rusclasp
 .. image:: https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000
   :target: https://github.com/gree-gorey/rusclasp/blob/master/LICENCE.md
+.. image:: https://zenodo.org/badge/19768/gree-gorey/rusclasp.svg
+  :target: https://zenodo.org/badge/latestdoi/19768/gree-gorey/rusclasp
 
 
 
