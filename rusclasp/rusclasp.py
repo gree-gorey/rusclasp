@@ -17,16 +17,44 @@ class Data:
         self.t = treetaggerwrapper.TreeTagger(TAGLANG=u'ru')
         # self.m = Mystem(grammar_info=True, disambiguation=True, entire_input=True)
 
-        # self.prepositions = json.load(codecs.open(u'./data/prepositions.json', u'r', u'utf-8'))
-        self.complimentizers = json.load(codecs.open(u'./data/complimentizers.json', u'r', u'utf-8'))
-        self.inserted = json.load(codecs.open(u'./data/inserted.json', u'r', u'utf-8'))
-        self.predicates = json.load(codecs.open(u'./data/predicates.json', u'r', u'utf-8'))
-        self.inserted_evidence = json.load(codecs.open(u'./data/inserted_evidence.json', u'r', u'utf-8'))
-        self.complex_complimentizers = json.load(codecs.open(u'./data/complex_complimentizers.json', u'r', u'utf-8'))
-        self.specificators = json.load(codecs.open(u'./data/specificators.json', u'r', u'utf-8'))
+        self.path = os.path.dirname(os.path.abspath(__file__))
+
+        self.complimentizers = json.load(codecs.open(self.path + u'/data/complimentizers.json', u'r', u'utf-8'))
+        self.inserted = json.load(codecs.open(self.path + u'/data/inserted.json', u'r', u'utf-8'))
+        self.predicates = json.load(codecs.open(self.path + u'/data/predicates.json', u'r', u'utf-8'))
+        self.inserted_evidence = json.load(codecs.open(self.path + u'/data/inserted_evidence.json', u'r', u'utf-8'))
+        self.complex_complimentizers = json.load(codecs.open(self.path + u'/data/complex_complimentizers.json', u'r',
+                                                             u'utf-8'))
+        self.specificators = json.load(codecs.open(self.path + u'/data/specificators.json', u'r', u'utf-8'))
         self.conditional_complimentizers = [u'а', u'как', u'то есть', u'а также']
 
 myData = Data()
+
+
+class Splitter:
+    def __init__(self):
+        self.result = dict()
+
+    def split(self, string, mode=u'json'):
+        # создаем экземпляр класса текст
+        text = Text(string)
+        # нормализуем и записываем результат в JSON
+        text.normalize()
+        self.result[u'text'] = text.result
+        # делаем pos-tagging
+        text.treetagger_analyzer()
+        # это так надо чтобы не переделывать весь код
+        text.result = text.analysis
+        # разбиваем текст на предложения
+        text.sentence_splitter()
+        # обходим предложения
+        for sentence in text.sentences:
+            # разбиваем предложение на предикации
+            sentence.split()
+        # создаем JSON с результатом
+        text.get_json(self.result)
+        # возвращаем результат
+        return self.result
 
 
 class Corpus:
@@ -170,7 +198,7 @@ class EvaluatedText:
 
 
 class Text:
-    def __init__(self, result, path):
+    def __init__(self, result, path=None):
         self.result = result
         self.path = path
         self.sentences = []
@@ -397,6 +425,37 @@ class Text:
 
         w.close()
 
+    def get_json(self, result):
+        result[u'entities'] = list()
+        result[u'relations'] = list()
+
+        i = 0
+        j = 0
+
+        for sentence in self.sentences:
+            for span in sentence.spans:
+                if span.embedded or span.inserted or span.base:
+                    i += 1
+                    entity = list()
+                    entity.append(u'T' + str(i))
+                    entity.append(u'Span')
+                    entity.append([[span.begin, span.end]])
+
+                    result[u'entities'].append(entity)
+
+                span.entity_number = i
+            for r in sentence.relations:
+                j += 1
+                relation = list()
+                relation.append(u'R' + str(j))
+                relation.append(u'Split')
+                arg1 = u'T' + str(sentence.spans[r[0]].entity_number)
+                arg2 = u'T' + str(sentence.spans[r[1]].entity_number)
+                relation.append([[u'LeftSpan', arg1], [u'RightSpan', arg2]])
+
+                result[u'relations'].append(relation)
+
+
     def write_dummy_ann(self):
         write_name = self.path.replace(u'txt', u'ann')
         w = codecs.open(write_name, u'w', u'utf-8')
@@ -418,7 +477,7 @@ class Text:
         shutil.copy(text, path + text.split(u'/')[-1])
         shutil.copy(ann, path + ann.split(u'/')[-1])
 
-    def normalize(self):
+    def normalize(self, mode=None):
         self.result = self.result.replace(u' ', u' ')
         self.result = self.result.replace(u'\r\n', u' ')
         self.result = self.result.replace(u'\n', u' ')
@@ -427,9 +486,9 @@ class Text:
                              flags=re.U)
         self.result = re.sub(u' +', u' ', self.result, flags=re.U)
         self.result = re.sub(u' $', u'', self.result, flags=re.U)
-        # здесь былы реги для кавычек
-        with codecs.open(self.path, u'w', u'utf-8') as w:
-            w.write(self.result)
+        if mode:
+            with codecs.open(self.path, u'w', u'utf-8') as w:
+                w.write(self.result)
 
 
 class Sentence:
@@ -446,6 +505,25 @@ class Sentence:
         self.span = False
         self.quotes = False
         self.new_spans = []
+
+    def split(self):
+        self.find_complimentizers()
+        self.find_names()
+        self.eliminate_pair_comma()
+        self.span_splitter()
+        self.get_shared_tokens()
+        self.split_double_complimentizers()
+
+        for span in self.spans:
+            span.type()
+
+        self.split_embedded()
+        self.restore_embedded()
+        self.split_base()
+        self.restore_base()
+
+        for span in self.spans:
+            span.get_boundaries()
 
     def contain_structure(self):
         for token in self.tokens:

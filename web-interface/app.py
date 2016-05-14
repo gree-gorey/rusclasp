@@ -2,7 +2,7 @@
 
 from flask import Flask, render_template, request, jsonify
 import time
-from rusclasp import split
+from rusclasp import rusclasp
 
 __author__ = 'gree-gorey'
 

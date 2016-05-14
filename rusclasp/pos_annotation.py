@@ -16,7 +16,7 @@ def main():
 
     for text in new_corpus.texts(u'txt'):
         # text.mystem_analyzer()
-        text.normalize()
+        text.normalize(mode=u'write')
         text.treetagger_analyzer()
         text.write_pos_ann()
 
