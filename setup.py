@@ -34,6 +34,9 @@ setup(
     install_requires=[
         'treetaggerwrapper',
     ],
+    package_data={
+        'rusclasp': ['data/*.json']
+    },
     zip_safe=False,
 
     classifiers=[
