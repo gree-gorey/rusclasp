@@ -6,6 +6,15 @@ Clause splitter for Russian language.
 .. image:: https://readthedocs.org/projects/rusclasp/badge/?version=latest
   :target: http://rusclasp.readthedocs.io/en/latest/?badge=latest
   :alt: Documentation Status
+.. image:: https://badge.fury.io/py/rusclasp.svg
+  :target: https://badge.fury.io/py/rusclasp
+.. image:: https://img.shields.io/pypi/wheel/Django.svg?maxAge=2592000
+  :target: https://pypi.python.org/pypi/rusclasp
+.. image:: https://img.shields.io/pypi/pyversions/Django.svg?maxAge=2592000
+  :target: https://pypi.python.org/pypi/rusclasp
+.. image:: https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000
+  :target: https://github.com/gree-gorey/rusclasp/blob/master/LICENCE.rst
+
 
 * changelog: https://github.com/gree-gorey/rusclasp/blob/master/CHANGES.rst
 * source code: github_
