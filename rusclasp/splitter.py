@@ -112,7 +112,7 @@ class PairCorpora:
             self.length_tested += len(text.spans_tested)
         self.precision = float(self.match) / float(self.length_tested)
         self.recall = float(self.match) / float(self.length_gold)
-        self.f_value = (self.precision + self.recall) / 2
+        self.f_value = 2 * self.precision * self.recall / (self.precision + self.recall)
 
 
 class EvaluatedText:
