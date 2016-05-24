@@ -77,6 +77,13 @@ class Corpus:
             tokens += len(text.result)
         return tokens
 
+    def count_sentences(self):
+        sentences = 0
+        for text in self.texts(u'json'):
+            text.sentence_splitter()
+            sentences += len(text.sentences)
+        return sentences
+
 
 class PairCorpora:
     def __init__(self, path_to_gold, path_to_tested):
@@ -114,6 +121,48 @@ class PairCorpora:
         self.recall = float(self.match) / float(self.length_gold)
         self.f_value = 2 * self.precision * self.recall / (self.precision + self.recall)
 
+        print u'Match: ' + str(self.match)
+        print u'Tested: ' + str(self.length_tested)
+        print u'Gold: ' + str(self.length_gold)
+
+    def evaluate_boundaries(self):
+        for text in self.texts:
+            self.match += text.match
+            self.length_gold += len(text.gold_boundaries)
+            self.length_tested += len(text.tested_boundaries)
+        self.precision = float(self.match) / float(self.length_tested)
+        self.recall = float(self.match) / float(self.length_gold)
+        self.f_value = 2 * self.precision * self.recall / (self.precision + self.recall)
+
+        print u'Match: ' + str(self.match)
+        print u'Tested: ' + str(self.length_tested)
+        print u'Gold: ' + str(self.length_gold)
+
+    def mean_span_size(self):
+        whole_size = 0
+        number_of_spans = 0
+        for text in self.texts:
+            number_of_spans += len(text.spans_gold)
+            for span in text.spans_gold:
+                whole_size += len(span.tokens)
+
+        print u'Mean span: ' + str(float(whole_size) / number_of_spans)
+
+    def evaluate_window(self):
+        match = 0
+        windows = 0
+        for text in self.texts:
+            match += text.match
+            windows += text.windows
+
+        accuracy = float(match) / float(windows)
+
+        mismatch = windows - match
+
+        print u'Accuracy: ' + str(accuracy)
+        print u'Match: ' + str(match)
+        print u'Mismatch: ' + str(mismatch)
+
 
 class EvaluatedText:
     def __init__(self, ann_gold, ann_tested, tokens):
@@ -125,6 +174,9 @@ class EvaluatedText:
         self.relations_gold = []
         self.relations_tested = []
         self.match = 0
+        self.gold_boundaries = []
+        self.tested_boundaries = []
+        self.windows = 0
 
     def count_match(self):
         for span_gold in self.spans_gold:
@@ -155,6 +207,29 @@ class EvaluatedText:
 
         for span in self.spans_generator(self.ann_tested):
             self.spans_tested.append(span)
+
+    def get_boundaries(self):
+        for span in self.spans_generator(self.ann_gold):
+            self.gold_boundaries.append(span.end)
+
+        for span in self.spans_generator(self.ann_tested):
+            self.tested_boundaries.append(span.end)
+
+    def count_match_boundaries(self):
+        self.match = len(set(self.gold_boundaries) & set(self.tested_boundaries))
+
+    def count_match_window_diff(self):
+        for i in xrange(0, len(self.tokens)-5):
+            window_begin = self.tokens[i][u'begin']
+            window_end = self.tokens[i+5][u'end']
+
+            gold_match_window = [x for x in self.gold_boundaries if window_begin <= x <= window_end]
+            tested_match_window = [x for x in self.tested_boundaries if window_begin <= x <= window_end]
+
+            if len(gold_match_window) == len(tested_match_window):
+                self.match += 1
+
+            self.windows += 1
 
     def spans_generator(self, annotation):
         for line in annotation:

@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import time
-from structures import Corpus
+from splitter import Corpus
 
 __author__ = u'gree-gorey'
 
@@ -9,8 +9,8 @@ __author__ = u'gree-gorey'
 def main():
     t1 = time.time()
 
-    new_corpus = Corpus(u'/home/gree-gorey/CorpusTemp/')
-    # new_corpus = Corpus(u'/home/gree-gorey/tested/')
+    # new_corpus = Corpus(u'/home/gree-gorey/CorpusTemp/')
+    new_corpus = Corpus(u'/home/gree-gorey/CorpusClean/')
     # new_corpus = Corpus(u'/home/gree-gorey/stupid/')
     # new_corpus = Corpus(u'/home/gree-gorey/tested_tested/')
 
