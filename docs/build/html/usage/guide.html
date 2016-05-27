@@ -55,15 +55,23 @@
             
   <div class="section" id="id1">
 <h1>Руководство пользователя<a class="headerlink" href="#id1" title="Ссылка на этот заголовок">¶</a></h1>
-<div class="section" id="id2">
-<h2>Установка<a class="headerlink" href="#id2" title="Ссылка на этот заголовок">¶</a></h2>
+<div class="section" id="pypi">
+<h2>Установка из PyPI<a class="headerlink" href="#pypi" title="Ссылка на этот заголовок">¶</a></h2>
 <p>Для установки используйте pip:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">rusclasp</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span>$ pip install rusclasp
+</pre></div>
+</div>
+<div class="section" id="dependencies">
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Ссылка на этот заголовок">¶</a></h3>
+<p>Для работы rusclasp необходим <a class="reference external" href="http://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/">TreeTagger</a> (вместе с <a class="reference external" href="http://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/russian-par-linux-3.2-utf8.bin.gz">Russian parameter file</a>) а также
+<a class="reference external" href="https://packages.debian.org/sid/libicu-dev">treetaggerwrapper</a>, treetaggerwrapper может быть установлен следующей командой:</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span></span>$ pip install treetaggerwrapper
 </pre></div>
 </div>
 </div>
-<div class="section" id="id3">
-<h2>Разбиение предикаций<a class="headerlink" href="#id3" title="Ссылка на этот заголовок">¶</a></h2>
+</div>
+<div class="section" id="id2">
+<h2>Разбиение предикаций<a class="headerlink" href="#id2" title="Ссылка на этот заголовок">¶</a></h2>
 <p>Разбиение на предикации представляет собой разбиение текста на отрезки, содержащие один финитный предикат (возможно, нулевой) и его зависимые. При этом предикации, разорванные вложением, восстанавливаются.</p>
 <p>Разбиение происходит следующим образом:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">rusclasp</span>
@@ -100,8 +108,11 @@
   <h3><a href="../index.html">Оглавление</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Руководство пользователя</a><ul>
-<li><a class="reference internal" href="#id2">Установка</a></li>
-<li><a class="reference internal" href="#id3">Разбиение предикаций</a></li>
+<li><a class="reference internal" href="#pypi">Установка из PyPI</a><ul>
+<li><a class="reference internal" href="#dependencies">Dependencies</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id2">Разбиение предикаций</a></li>
 </ul>
 </li>
 </ul>

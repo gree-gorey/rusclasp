@@ -2,14 +2,24 @@
 Руководство пользователя
 ========================
 
-Установка
----------
+Установка из PyPI
+-----------------
 
 Для установки используйте pip:
 
 .. code-block:: python
 
-   pip install rusclasp
+   $ pip install rusclasp
+   
+Dependencies
+~~~~~~~~~~~~
+
+Для работы rusclasp необходим `TreeTagger <http://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/>`__ (вместе с `Russian parameter file <http://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/data/russian-par-linux-3.2-utf8.bin.gz>`__) а также
+`treetaggerwrapper <https://packages.debian.org/sid/libicu-dev>`__, treetaggerwrapper может быть установлен следующей командой:
+
+.. code:: python
+
+    $ pip install treetaggerwrapper
 
 
 Разбиение предикаций
