@@ -8,8 +8,6 @@ __author__ = u'gree-gorey'
 
 def evaluate():
 
-    spans = 0
-
     # new_pair_corpora = PairCorpora(u'/home/gree-gorey/CorpusTemp/', u'/home/gree-gorey/CorpusTemp/')
     new_pair_corpora = PairCorpora(u'/opt/brat-v1.3_Crunchy_Frog/data/gold/', u'/home/gree-gorey/tested/')
     # new_pair_corpora = PairCorpora(u'/opt/brat-v1.3_Crunchy_Frog/data/gold/', u'/home/gree-gorey/stupid/')
@@ -28,22 +26,12 @@ def evaluate():
         evaluated_text.get_boundaries()
         evaluated_text.count_match_window_diff()
 
-        # for span in evaluated_text.spans_gold:
-        #     print u' '.join(span.tokens)
-        # print u'**********'
-        #
-        # for span in evaluated_text.spans_tested:
-        #     print u' '.join(span.tokens)
-        # print u'**********'
-
         new_pair_corpora.texts.append(evaluated_text)
 
     # new_pair_corpora.evaluate()
     # new_pair_corpora.evaluate_boundaries()
     # new_pair_corpora.mean_span_size()
     new_pair_corpora.evaluate_window()
-
-    # print spans
 
     print u'Precision: ', new_pair_corpora.precision
     print u'Recall: ', new_pair_corpora.recall
