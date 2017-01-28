@@ -4,7 +4,7 @@ rusclasp
 Clause splitter for Russian language.
 
 .. image:: https://readthedocs.org/projects/rusclasp/badge/?version=latest
-  :target: http://rusclasp.readthedocs.io/en/latest/?badge=latest
+  :target: http://rusclasp.readthedocs.io/ru/latest/
   :alt: Documentation Status
 .. image:: https://badge.fury.io/py/rusclasp.svg
    :target: https://badge.fury.io/py/rusclasp
